@@ -208,14 +208,10 @@ export function createDownload() {
     ? config.saveFileName.split("_")[0]
     : config.saveFileName;
   const folderNameWithSeed = config.saveFileName.split(".")[0]; // Remove extension
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, "-")
-    .substring(0, 19);
-
-  // Add main save folder - include timestamp to avoid conflicts
+  
+  // Add main save folder
   const mainFolderName = `${folderNameWithSeed}_modified`;
-  const saveFolder = zip.folder(mainFolderName);
+  const saveFolder = zip.folder(folderNameWithSeed);
 
   if (!saveFolder) {
     showError("Error creating ZIP folder structure");
@@ -226,54 +222,29 @@ export function createDownload() {
   }
 
   try {
-    // Create a subfolder for the modified files
-    const modifiedFolder = saveFolder.folder("modified_files");
-    // Create a subfolder for the backups
-    const backupFolder = saveFolder.folder("backup_files");
-
-    if (!modifiedFolder || !backupFolder) {
-      throw new Error("Could not create necessary subfolders");
-    }
-
-    // Add save files to the modified folder
-    modifiedFolder.file(config.saveFileName, config.originalFiles.saveGame);
-    modifiedFolder.file("SaveGameInfo", config.originalFiles.saveGameInfo);
+    // Get the base name without extension for file naming
+    const baseSaveName = config.saveFileName.split('.')[0];
+    
+    // Add modified files (without suffix)
+    saveFolder.file(baseSaveName, config.originalFiles.saveGame);
+    saveFolder.file("SaveGameInfo", config.originalFiles.saveGameInfo);
     if (config.originalFiles.additionalCropData) {
-      modifiedFolder.file(
-        "AdditionalCropData",
-        config.originalFiles.additionalCropData
-      );
+      saveFolder.file("AdditionalCropData", config.originalFiles.additionalCropData);
     }
-
-    // Add backup files to the backup folder
-    backupFolder.file(config.saveFileName, config.backupFiles.saveGame);
-    backupFolder.file("SaveGameInfo", config.backupFiles.saveGameInfo);
+    
+    // Add backup/copy files (with _copy suffix)
+    saveFolder.file(`${baseSaveName}_copy`, config.backupFiles.saveGame);
+    saveFolder.file("SaveGameInfo_copy", config.backupFiles.saveGameInfo);
     if (config.backupFiles.additionalCropData) {
-      backupFolder.file(
-        "AdditionalCropData",
-        config.backupFiles.additionalCropData
-      );
+      saveFolder.file("AdditionalCropData_copy", config.backupFiles.additionalCropData);
     }
-
-    // Add README file with instructions
-    const readmeContent = `# Stardew Valley Host Swap - Modified Files
-
-## Contents
-This ZIP file contains:
-- /modified_files/ - Files with the new host (${
-      config.selectedNewHost
-    }) that you should use
-- /backup_files/ - Backup of the original files
-
-## Instructions
-1. Extract all the contents of the "modified_files" folder into your Stardew Valley save folder
-2. The directory should be: ${mainFolderName}
-3. If you have problems, you can restore the original files from the "backup_files" folder
-
-## Generated on: ${new Date().toLocaleString()}
-`;
-
-    saveFolder.file("README.txt", readmeContent);
+    
+    // Add _old files (empty placeholders)
+    saveFolder.file(`${baseSaveName}_old`, "");
+    saveFolder.file("SaveGameInfo_old", "");
+    if (config.originalFiles.additionalCropData) {
+      saveFolder.file("AdditionalCropData_old", "");
+    }
 
     // Generate ZIP file with better compression for text files
     zip
@@ -295,7 +266,7 @@ This ZIP file contains:
           // Create URL for download
           const url = URL.createObjectURL(content);
           downloadLink.href = url;
-          downloadLink.download = `${mainFolderName}_${timestamp}.zip`;
+          downloadLink.download = `${mainFolderName}.zip`;
           downloadLink.style.display = "inline-block";
 
           // Hide loading indicator
@@ -306,7 +277,7 @@ This ZIP file contains:
           // Add event to show message on download
           downloadLink.onclick = function () {
             showMessage(
-              "Download started! Remember to extract the contents of the 'modified_files' folder into your Stardew Valley saves folder.",
+              "Download started! Remember to extract the contents into your Stardew Valley saves folder.",
               "success"
             );
 
