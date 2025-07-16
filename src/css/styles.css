@@ -164,7 +164,7 @@ textarea {
     margin-top: 10px;
 }
 
-/* La definición principal de character-section ahora está unificada con result-section */
+/* The main definition of character-section is now unified with result-section */
 
 .character-list {
     display: grid;
@@ -402,7 +402,7 @@ footer {
     margin-bottom: 10px;
 }
 
-/* Asegurar que todos los botones tengan apariencia consistente */
+/* Ensure all buttons have a consistent appearance */
 .download-button {
     display: inline-block;
     text-align: center;
