@@ -1,4 +1,5 @@
 
+<!DOCTYPE html>
 <html lang="en-US">
 <head>
     <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -11,68 +12,124 @@
       gtag('config', 'UA-123126773-1');
     </script>
 
-	<meta content="text/html;" charset="UTF-8" />
-	<title>Stardew Valley multiplayer host swapper</title>
-    <style>
-        textarea {
-            width: 80%;
-            height: 100px ;
-        }
-        input {
-            margin: 5px;
-        }
-        .characters {
-            margin-bottom: 10px;
-        }
-    </style>
-    <script type="text/javascript" src="/src/js/swap.js">
-    </script>
-
+    <meta content="text/html;" charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stardew Valley multiplayer host swapper</title>
+    
+    <!-- JSZip for handling ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <link rel="stylesheet" href="src/css/styles.css">
+    <script type="module" src="src/js/swap.js"></script>
 </head>
 
 <body>
-    <div>
-        <h1>Stardew Valley multiplayer host swapper</h1>
-        <p>Want to swap who's a farmhand and who's the host? This handy tool performs the changes described in this guide for you: <a href="https://www.reddit.com/r/StardewValley/comments/8i5z1j/guide_how_to_change_hosts_of_a_multiplayer_save/">www.reddit.com/r/StardewValley/comments/8i5z1j/guide_how_to_change_hosts_of_a_multiplayer_save</a>
-        <p><b>Always keep back-ups!</b> Modifying save files can break your game or be incompatible with updates. Use at your own risk.</p>
+    <div class="container">
+        <header>
+            <h1>Stardew Valley Multiplayer Host Swapper</h1>
+            <p>Want to swap who's a farmhand and who's the host? This tool allows you to change the host of your Stardew Valley multiplayer save file.</p>
+            <p><b>Always keep back-ups!</b> Modifying save files can break your game or be incompatible with updates. Use at your own risk.</p>
+        </header>
+
+        <main>
+            <div class="two-column-layout">
+                <!-- Left column: Modern method -->
+                <section class="column upload-section">
+                    <div class="column-header">
+                        <h2>Upload Your Save Files</h2>
+                        <p>Upload a ZIP file containing your save folder (<code>YourFarmName_123456789</code>).</p>
+                    </div>
+                    
+                    <div class="file-upload" id="drop-zone">
+                        <div class="file-upload-icon">📁</div>
+                        <p>Drag & drop your save ZIP file here<br>or click to browse</p>
+                        <input type="file" id="file-input" accept=".zip" class="file-upload-btn">
+                    </div>
+                </section>
+                
+                <!-- Right column: Legacy method -->
+                <section id="legacy-section" class="column legacy-section">
+                    <div class="column-header">
+                        <h2>Legacy Method (Text Paste)</h2>
+                        <p>Paste the contents of your save file (<code>YourFarmName_123456789</code>) below:</p>
+                    </div>
+                    
+                    <textarea id="input" oninput="setCharacters(event)" placeholder="Paste the contents of your save file here..."></textarea>
+                </section>
+            </div>
+            
+            <section id="loading" class="loading">
+                <div class="loading-spinner"></div>
+                <p>Processing save files...</p>
+            </section>
+
+            <section id="character-section" class="character-section">
+                <div class="column-header">
+                    <h2>Select New Host</h2>
+                    <p>Click on the character you want to make the new host:</p>
+                </div>
+                
+                <div id="message-container"></div>
+                
+                <div id="character-list" class="character-list">
+                    <!-- Character cards will be populated here -->
+                    <div class="empty-state">
+                        <p>Upload a save file or paste its contents to see the characters</p>
+                    </div>
+                </div>
+                
+                <button id="swap-button" class="swap-button" disabled>Change Host</button>
+            </section>
+            
+            <section id="result-section" class="result-section">
+                <div class="column-header">
+                    <h2>Host Change Complete!</h2>
+                    <p>The host has been changed successfully. Download the modified save files:</p>
+                </div>
+                
+                <a id="download-link" class="download-button">Download Modified Files</a>
+                
+                <div class="instructions">
+                    <h3>How to install the modified save:</h3>
+                    <ol>
+                        <li>Download the ZIP file using the button above</li>
+                        <li>Extract the ZIP file on your computer</li>
+                        <li>Copy all files from the "<strong>modified_files</strong>" folder to your Stardew Valley save folder (see the <a href="https://stardewvalleywiki.com/Saves" target="_blank">Stardew Valley Wiki</a> for locations)</li>
+                        <li>If something goes wrong, you can restore the original files from the "backup_files" folder</li>
+                    </ol>
+                </div>
+            </section>
+            
+            <section class="issues-section">
+                <h3>Known Issues</h3>
+                <ul>
+                    <li>Host shown on load screen stays original host when first loading</li>
+                    <li>Different people may see different amounts of things donated to the community center. Have the host place donations to be safe.</li>
+                    <li>The TV shows different luck levels for different players</li>
+                    <li>New host may get outdated mail</li>
+                </ul>
+                
+                <h3>Issues Fixed</h3>
+                <p>Issues fixed (9/23/2018):
+                <ul>
+                    <li><strike>Willy's shop may act like it was never unlocked</strike></li>
+                </ul>
+                </p>
+                <p>Issues fixed (7/31/2018):
+                <ul>
+                    <li><strike>New host repeats host-only events, like picking mushrooms or bats</strike></li>
+                    <li><strike>Messes up which house is upgraded</strike></li>
+                    <li><strike>Community center and Jojamart events may act as if they didn't happen</strike></li>
+                    <li><strike>Community improvements like minecarts may stop working</strike></li>
+                </ul>
+                </p>
+            </section>
+        </main>
+        
+        <footer>
+        <p>This tool was created thanks to this tutorial in reddit: <a href="https://www.reddit.com/r/StardewValley/comments/8i5z1j/guide_how_to_change_hosts_of_a_multiplayer_save/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button" target="_blank" rel="noopener">How to change hosts of a multiplayer save</a>.</p>
+        <p>See <a href="https://stardewvalleywiki.com/Saves" target="_blank" rel="noopener">Stardew Valley Wiki</a> for save file locations.</p>
+        </footer>
     </div>
-
-    <div>
-        <br/>
-        <br/>
-        <div>
-            <h2>Paste the contents of the file <span style="font-family:monospace">HostCharacterName_123456789</span> here.</h2>
-            <p>See <a href="https://stardewvalleywiki.com/Saves">https://stardewvalleywiki.com/Saves</a> for where to find your save file. Once it's parsed, option buttons will appear. (It can take a minute.)</p>
-        </div>
-        <p><textarea id="input" oninput="setCharacters(event)"></textarea></p>
-        <div id="instructions">
-            <p>Results will appear here.</p>
-        </div>
-        <p style="margin-bottom: 0px;-webkit-margin-after: 0px;"><textarea id="output"></textarea></p>
-        <input type="submit" value="Copy to clipboard" onclick="copy()">
-        <br />
-        <p>Known issues:
-            <ul>
-                <li>Host shown on load screen stays original host when first loading</li>
-                <li>Different people may see different amounts of things donated to the community center (I see bundle as complete but you don't). Have the host place donations to be safe.</li>
-                <li>The TV shows different luck levels for different players (it used to always match)</li>
-                <li>New host may get outdated mail</li>
-            </ul>
-        </p>
-        <p>Issues fixed (9/23/2018):
-            <ul>
-                <li><strike>Willy's shop may act like it was never unlocked</strike></li>
-            </ul>
-        </p>
-        <p>Issues fixed (7/31/2018):
-            <ul>
-                <li><strike>New host repeats host-only events, like picking mushrooms or bats</strike></li>
-                <li><strike>Messes up which house is upgraded</strike></li>
-                <li><strike>Community center and Jojamart events may act as if they didn't happen.</strike></li>
-                <li><strike>Community improvements like minecarts may stop working.</strike></li>
-            </ul>
-        </p>
-	</div>
-
 </body>
 </html>
