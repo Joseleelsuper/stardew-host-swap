@@ -1,26 +1,25 @@
 /**
  * Stardew Valley Host Swap Tool - Utils Module
- * Contiene funciones de utilidad generales
+ * Contains general utility functions
  */
 
 /**
- * Mostrar mensaje de error
+ * Show error message
  */
 export function showError(message) {
   showMessage(message, "error");
 }
 
 /**
- * Mostrar mensaje con tipo específico
+ * Show message with a specific type
  */
 export function showMessage(message, type) {
   const messageContainer = document.getElementById("message-container");
   if (!messageContainer) {
-    console.log(`${type}: ${message}`);
     return;
   }
 
-  // Limpiar mensajes anteriores
+  // Clear previous messages
   messageContainer.innerHTML = "";
 
   const messageElement = document.createElement("div");
@@ -31,62 +30,65 @@ export function showMessage(message, type) {
 }
 
 /**
- * Función auxiliar para aislar el contenido de una etiqueta XML
+ * Helper function to isolate the content of an XML tag
  */
 export function isolateTag(string, tag) {
   var startIndex = string.indexOf("<" + tag + ">");
   var endIndex = string.indexOf("</" + tag + ">") + tag.length + 3;
   var noContents = false;
-  
+
   if (startIndex === -1) {
     startIndex = string.indexOf("<" + tag + "/>" + tag.length + 3);
     noContents = true;
     endIndex = startIndex;
   }
-  
+
   if (startIndex === -1) {
     return string; // malformed
   }
-  
+
   var beforeTag = string.substring(0, startIndex) + "<" + tag + ">";
   var contents = noContents
     ? ""
     : string.substring(startIndex + tag.length + 2, endIndex - tag.length - 3);
   var afterTag = "</" + tag + ">" + string.substring(endIndex);
-  
+
   return [beforeTag, contents, afterTag];
 }
 
 /**
- * Esperar a que se cargue el DOM
- * @param {Function} callback - Función a ejecutar después de cargado el DOM
+ * Wait for the DOM to load
+ * @param {Function} callback - Function to execute after the DOM is loaded
  */
 export function onDOMReady(callback) {
-  if (document.readyState !== 'loading') {
+  if (document.readyState !== "loading") {
     callback();
   } else {
-    document.addEventListener('DOMContentLoaded', callback);
+    document.addEventListener("DOMContentLoaded", callback);
   }
 }
 
 /**
- * Función para copiar texto al portapapeles
- * @param {string} text - Texto a copiar
- * @param {string} successMessage - Mensaje a mostrar si la copia fue exitosa
+ * Function to copy text to the clipboard
+ * @param {string} text - Text to copy
+ * @param {string} successMessage - Message to show if the copy was successful
  */
-export function copyToClipboard(text, successMessage = "¡Texto copiado al portapapeles!") {
-  // Crear un elemento de texto temporal
+export function copyToClipboard(
+  text,
+  successMessage = "Text copied to clipboard!"
+) {
+  // Create a temporary text element
   const tempTextArea = document.createElement("textarea");
   tempTextArea.value = text;
   document.body.appendChild(tempTextArea);
-  
-  // Seleccionar y copiar el texto
+
+  // Select and copy the text
   tempTextArea.select();
   document.execCommand("copy");
-  
-  // Eliminar el elemento temporal
+
+  // Remove the temporary element
   document.body.removeChild(tempTextArea);
-  
-  // Mostrar mensaje de éxito
+
+  // Show success message
   showMessage(successMessage, "success");
 }

@@ -1,44 +1,34 @@
 /**
  * Stardew Valley Host Swap Tool - UI Controller Module
- * Controla la interfaz de usuario
+ * Controls the user interface
  */
 
-import * as config from './config.js';
-import { showMessage, showError, copyToClipboard } from './utils.js';
-import { selectNewHost, swapHost } from './characterHandler.js';
-import { createDownload, handleFileUpload } from './fileHandler.js';
+import * as config from "./config.js";
+import { showMessage, showError, copyToClipboard } from "./utils.js";
+import { selectNewHost, swapHost } from "./characterHandler.js";
+import { createDownload, handleFileUpload } from "./fileHandler.js";
 
 /**
- * Mostrar personajes en la UI
+ * Display characters in the UI
  */
 export function displayCharacters() {
-  console.log("Mostrando personajes en la UI...");
-  console.log("Host:", config.hostCharacter);
-  console.log("Farmhands:", config.farmhands);
-  
   const characterSection = document.getElementById("character-section");
   if (!characterSection) {
-    console.log("No se encontró el elemento character-section, usando legacy UI");
-    // Versión antigua de UI
+    // Old UI version
     displayCharactersLegacy();
     return;
   }
-  
-  console.log("Elemento character-section encontrado, mostrando personajes en la UI moderna");
 
   characterSection.style.display = "block";
-  console.log("Mostrando sección de caracteres (display: block)");
 
   const characterList = document.getElementById("character-list");
   if (!characterList) {
-    console.error("No se encontró el elemento character-list");
     return;
   }
-  
-  console.log("Limpiando la lista de caracteres");
+
   characterList.innerHTML = "";
 
-  // Añadir personaje host
+  // Add host character
   if (config.hostCharacter) {
     const hostCard = document.createElement("div");
     hostCard.className = "character-card host-character";
@@ -53,7 +43,7 @@ export function displayCharacters() {
     characterList.appendChild(hostCard);
   }
 
-  // Añadir personajes ayudantes
+  // Add farmhand characters
   config.farmhands.forEach((farmhand) => {
     const farmhandCard = document.createElement("div");
     farmhandCard.className = "character-card";
@@ -72,7 +62,7 @@ export function displayCharacters() {
     characterList.appendChild(farmhandCard);
   });
 
-  // Habilitar botón de intercambio si hay ayudantes
+  // Enable swap button if there are farmhands
   const swapButton = document.getElementById("swap-button");
   if (swapButton) {
     swapButton.disabled = config.farmhands.length === 0;
@@ -87,10 +77,10 @@ export function displayCharacters() {
 }
 
 /**
- * Mostrar personajes en la UI heredada
+ * Display characters in the legacy UI
  */
 export function displayCharactersLegacy() {
-  // Para compatibilidad con la interfaz original
+  // For compatibility with the original interface
   let players = [];
   let hostName = "";
 
@@ -98,9 +88,9 @@ export function displayCharactersLegacy() {
     hostName = config.hostCharacter.name;
   }
 
-  // Solo añadimos farmhands a la lista de seleccionables
+  // Only add farmhands to the selectable list
   config.farmhands.forEach((farmhand, index) => {
-    // Comenzar los índices de ayudantes en 3, ya que 1 es host y 2 está reservado para los datos del host
+    // Start farmhand indices at 3, since 1 is host and 2 is reserved for host data
     players.push([farmhand.name, index + 3]);
   });
 
@@ -115,7 +105,7 @@ export function displayCharactersLegacy() {
     );
     div.appendChild(t);
   } else {
-    // Mostrar el host actual
+    // Show the current host
     if (hostName) {
       const hostInfo = document.createElement("p");
       hostInfo.innerHTML = `<strong>Current host:</strong> ${hostName}`;
@@ -146,13 +136,13 @@ export function displayCharactersLegacy() {
 }
 
 /**
- * Función de intercambio para la UI heredada
+ * Swap function for the legacy UI
  */
 export function legacySwap(characterName) {
   selectNewHost(characterName);
-  
+
   if (swapHost()) {
-    // Mostrar en el estilo de UI antiguo
+    // Show in the old UI style
     const div = document.getElementById("instructions");
     const instruction2 = document.getElementById("instruction2");
     if (instruction2) div.removeChild(instruction2);
@@ -165,8 +155,10 @@ export function legacySwap(characterName) {
     p.appendChild(t);
     div.appendChild(p);
 
-    // Mostrar un botón para copiar el contenido
-    const copyButton = document.querySelector(".legacy-section .download-button");
+    // Show a button to copy the content
+    const copyButton = document.querySelector(
+      ".legacy-section .download-button"
+    );
     if (copyButton) {
       copyButton.style.display = "inline-block";
     }
@@ -174,11 +166,11 @@ export function legacySwap(characterName) {
 }
 
 /**
- * Manejar el clic en el botón de intercambio
+ * Handle the swap button click
  */
 export function handleSwapButtonClick() {
   if (swapHost()) {
-    // Mostrar la sección de resultados y habilitar el enlace de descarga
+    // Show the result section and enable the download link
     const resultSection = document.getElementById("result-section");
     if (resultSection) {
       resultSection.style.display = "block";
@@ -188,24 +180,24 @@ export function handleSwapButtonClick() {
     if (downloadLink) {
       downloadLink.style.pointerEvents = "auto";
       downloadLink.style.opacity = "1";
-      downloadLink.title = "Haz clic para descargar el archivo modificado";
+      downloadLink.title = "Click to download the modified file";
     }
 
-    // Crear descarga
+    // Create download
     createDownload();
 
     showMessage(
-      `¡Host cambiado exitosamente a ${config.selectedNewHost}!`,
+      `Host successfully changed to ${config.selectedNewHost}!`,
       "success"
     );
   }
 }
 
 /**
- * Configurar listeners de eventos UI
+ * Set up UI event listeners
  */
 export function setupUIEventListeners() {
-  // Configurar el comportamiento de la zona de soltar
+  // Configure the drop zone behavior
   const dropZone = document.getElementById("drop-zone");
   if (dropZone) {
     dropZone.addEventListener("dragover", function (e) {
@@ -220,14 +212,13 @@ export function setupUIEventListeners() {
     dropZone.addEventListener("drop", function (e) {
       e.preventDefault();
       dropZone.classList.remove("dragover");
-      console.log("Evento drop activado");
-      
-      // Usar la función importada directamente
+
+      // Use the imported function directly
       handleFileUpload(e);
     });
   }
 
-  // Configurar botón de intercambio
+  // Configure swap button
   const swapButton = document.getElementById("swap-button");
   if (swapButton) {
     swapButton.addEventListener("click", handleSwapButtonClick);
@@ -235,12 +226,15 @@ export function setupUIEventListeners() {
 }
 
 /**
- * Función para compatibilidad hacia atrás
+ * Function for backward compatibility
  */
 export function copyToClipboardLegacy() {
-  // Copiar el archivo de guardado modificado al portapapeles desde originalFiles 
-  // en lugar de usar el textarea de salida eliminado
+  // Copy the modified save file to the clipboard from originalFiles
+  // instead of using the removed output textarea
   if (config.originalFiles.saveGame) {
-    copyToClipboard(config.originalFiles.saveGame, "Modified save file copied to clipboard!");
+    copyToClipboard(
+      config.originalFiles.saveGame,
+      "Modified save file copied to clipboard!"
+    );
   }
 }

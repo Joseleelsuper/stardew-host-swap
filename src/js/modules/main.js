@@ -1,77 +1,76 @@
 /**
  * Stardew Valley Host Swap Tool - Main Module
- * Punto de entrada principal para la aplicación
+ * Main entry point for the application
  */
 
-import { onDOMReady } from './utils.js';
-import { handleFileUpload, handleTextInput } from './fileHandler.js';
-import { setupUIEventListeners, copyToClipboardLegacy, legacySwap, displayCharacters } from './uiController.js';
-import { selectNewHost, swapHost, parseCharacters } from './characterHandler.js';
+import { onDOMReady } from "./utils.js";
+import { handleFileUpload, handleTextInput } from "./fileHandler.js";
+import {
+  setupUIEventListeners,
+  copyToClipboardLegacy,
+  legacySwap,
+  displayCharacters,
+} from "./uiController.js";
+import {
+  selectNewHost,
+  swapHost,
+  parseCharacters,
+} from "./characterHandler.js";
 
 /**
- * Inicializar la aplicación
+ * Initialize the application
  */
 function init() {
-  console.log("Inicializando aplicación Stardew Valley Host Swap Tool...");
-  // Preparar la interfaz inicial
+  // Prepare initial interface
   const characterSection = document.getElementById("character-section");
   const resultSection = document.getElementById("result-section");
   const downloadLink = document.getElementById("download-link");
 
-  // Si existen estos elementos, los configuramos inicialmente
+  // Configure elements if they exist
   if (resultSection) {
-    // Ocultar el área de resultados hasta que se complete un cambio de host
+    // Hide results area until host change is completed
     resultSection.style.display = "none";
 
     if (downloadLink) {
       downloadLink.style.pointerEvents = "none";
       downloadLink.style.opacity = "0.5";
       downloadLink.href = "#";
-      downloadLink.title =
-        "Primero debes procesar un archivo y cambiar el host";
+      downloadLink.title = "You must process a file and change the host first";
     }
   }
 
-  // Comprobar si estamos usando la nueva UI
+  // Check if we're using the new UI
   const fileInput = document.getElementById("file-input");
   if (fileInput) {
-    // Asegurarnos de que el evento se asigne directamente
-    console.log("Asignando evento change al input de archivo");
-    fileInput.addEventListener("change", function(event) {
-      console.log("Evento change del input de archivo activado");
-      
-      // Esto debería llamar a la función importada correctamente
+    // Ensure the event is assigned directly
+    fileInput.addEventListener("change", function (event) {
+      // Call the imported function correctly
       handleFileUpload(event);
-      
-      // También asegurarnos de que se muestren los personajes después de procesar el archivo
+
+      // Also ensure characters are displayed after processing the file
       setTimeout(() => {
-        import('./characterHandler.js').then(ch => {
-          console.log("Verificando que los personajes fueron analizados después de cargar el archivo");
-          import('./uiController.js').then(ui => {
+        import("./characterHandler.js").then((ch) => {
+          import("./uiController.js").then((ui) => {
             ui.displayCharacters();
           });
         });
-      }, 1000); // Pequeño retraso para asegurar que el procesamiento se complete
+      }, 1000); // Small delay to ensure processing is complete
     });
-    
-    // Configurar el resto de listeners de eventos UI
+
+    // Set up the rest of UI event listeners
     setupUIEventListeners();
   }
 
-  // Comprobar para entrada de texto heredada
+  // Check for legacy text input
   const textInput = document.getElementById("input");
   if (textInput) {
-    console.log("Asignando evento input al textarea");
-    textInput.addEventListener("input", function(event) {
-      console.log("Evento input del textarea activado");
+    textInput.addEventListener("input", function (event) {
       handleTextInput(event);
     });
   }
-  
-  console.log("Inicialización completada - UI preparada");
 }
 
-// Exponer funciones necesarias para compatibilidad con código heredado
+// Expose functions needed for legacy code compatibility
 window.setCharacters = handleTextInput;
 window.copy = copyToClipboardLegacy;
 window.legacySwap = legacySwap;
@@ -80,8 +79,8 @@ window.swapHost = swapHost;
 window.parseCharacters = parseCharacters;
 window.displayCharacters = displayCharacters;
 
-// Inicializar cuando se cargue el DOM - usando ambos métodos para mayor compatibilidad
-document.addEventListener('DOMContentLoaded', init);
+// Initialize when DOM loads - using both methods for better compatibility
+document.addEventListener("DOMContentLoaded", init);
 
-// También usar onDOMReady como respaldo
+// Also use onDOMReady as backup
 onDOMReady(init);

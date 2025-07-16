@@ -1,9 +1,7 @@
 /**
  * Stardew Valley Host Swap Tool - Configuration Module
- * Contiene las configuraciones y variables globales de la aplicación
  */
 
-// Variables globales para almacenar datos analizados
 export let originalFiles = {
   saveGame: null,
   saveGameInfo: null,
@@ -21,7 +19,6 @@ export let farmhands = [];
 export let selectedNewHost = null;
 export let saveFileName = "";
 
-// Lista de correos transferibles (que todos los jugadores deben compartir)
 export const TRANSFERRABLE_MAIL = [
   "<string>ccDoorUnlock</string>",
   "<string>ccPantry</string>",
@@ -39,7 +36,6 @@ export const TRANSFERRABLE_MAIL = [
   "<string>spring_2_1</string>", // Willy's shop unlock
 ];
 
-// Lista de eventos transferibles (que todos los jugadores deben compartir)
 export const TRANSFERRABLE_EVENTS = [
   "<int>65</int>", // Bats or mushrooms
   "<int>1590166</int>", // Marnie gives you a cat
@@ -49,52 +45,45 @@ export const TRANSFERRABLE_EVENTS = [
   "<int>502261</int>", // Joja final cutscene
 ];
 
-// Resetear datos
+// Reset data
 export function resetData() {
   originalFiles = {
     saveGame: null,
     saveGameInfo: null,
     additionalCropData: null,
   };
-  
+
   backupFiles = {
     saveGame: null,
     saveGameInfo: null,
     additionalCropData: null,
   };
-  
+
   hostCharacter = null;
   farmhands = [];
   selectedNewHost = null;
   saveFileName = "";
 }
 
-// Actualizar host seleccionado
 export function setSelectedNewHost(name) {
   selectedNewHost = name;
 }
 
-// Actualizar nombre de archivo de guardado
 export function setSaveFileName(name) {
   saveFileName = name;
 }
 
-// Actualizar datos de host
 export function setHostCharacter(host) {
   hostCharacter = host;
 }
 
-// Actualizar datos de ayudantes
 export function setFarmhands(hands) {
   farmhands = hands;
 }
 
-// Actualizar archivos originales
 export function updateOriginalFiles(key, value) {
   originalFiles[key] = value;
 }
-
-// Actualizar archivos de backup
 export function updateBackupFiles(key, value) {
   backupFiles[key] = value;
 }

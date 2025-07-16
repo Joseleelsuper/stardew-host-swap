@@ -1,35 +1,29 @@
 /**
  * Stardew Valley Host Swap Tool - Character Handler Module
- * Procesa y maneja los personajes de los archivos de guardado
+ * Processes and manages characters from save files
  */
 
-import * as config from './config.js';
-import { showError, showMessage } from './utils.js';
-import { fixHostData } from './dataProcessor.js';
+import * as config from "./config.js";
+import { showError, showMessage } from "./utils.js";
+import { fixHostData } from "./dataProcessor.js";
 
 /**
- * Analizar personajes del archivo de guardado
+ * Parse characters from the save file
  */
 export function parseCharacters() {
   try {
-    console.log("Analizando personajes del archivo de guardado...");
-    
     const saveGameXml = config.originalFiles.saveGame;
-    
+
     if (!saveGameXml) {
-      console.error("Error: No hay contenido en saveGameXml");
-      showError("No se encontró contenido en el archivo de guardado. Por favor, intenta cargarlo nuevamente.");
+      showError("No content found in save file. Please try loading it again.");
       return false;
     }
-    
-    // Añadir un registro para depuración
-    console.log("Contenido de saveGameXml:", saveGameXml.substring(0, 100) + "...");
 
-    // Resetear datos de personajes
+    // Reset character data
     config.setHostCharacter(null);
     config.setFarmhands([]);
 
-    // Analizar el personaje host (etiqueta player)
+    // Parse the host character (player tag)
     const hostMatch = saveGameXml.match(/<player>([\s\S]*?)<\/player>/);
     if (hostMatch) {
       const hostContent = hostMatch[1];
@@ -46,7 +40,7 @@ export function parseCharacters() {
       }
     }
 
-    // Analizar ayudantes (farmhands)
+    // Parse farmhands
     const farmhandPattern = /<farmhand>([\s\S]*?)<\/farmhand>/g;
     let farmhandMatch;
     let hands = [];
@@ -65,14 +59,17 @@ export function parseCharacters() {
       }
     }
 
-    // Comprobar también las etiquetas Farmer (en caso de estructura XML diferente)
+    // Also check for Farmer tags (in case of different XML structure)
     if (hands.length === 0) {
       const farmerPattern = /<Farmer>([\s\S]*?)<\/Farmer>/g;
       let farmerMatch;
 
       while ((farmerMatch = farmerPattern.exec(saveGameXml)) !== null) {
-        // Omitir si esta es la etiqueta Farmer del host (dentro de la etiqueta player)
-        if (config.hostCharacter && config.hostCharacter.content.includes(farmerMatch[0])) {
+        // Skip if this is the host's Farmer tag (inside the player tag)
+        if (
+          config.hostCharacter &&
+          config.hostCharacter.content.includes(farmerMatch[0])
+        ) {
           continue;
         }
 
@@ -92,15 +89,13 @@ export function parseCharacters() {
 
     config.setFarmhands(hands);
 
-    // Mostrar personajes - importamos aquí para evitar referencia circular
-    import('./uiController.js').then(ui => {
-      console.log("Llamando a displayCharacters después de analizar los personajes");
+    // Display characters - import here to avoid circular reference
+    import("./uiController.js").then((ui) => {
       ui.displayCharacters();
     });
-    
+
     return true;
   } catch (error) {
-    console.error("Error parsing characters:", error);
     showError(
       "Error parsing save file. The file might be corrupted or in an unsupported format."
     );
@@ -109,12 +104,12 @@ export function parseCharacters() {
 }
 
 /**
- * Seleccionar un nuevo host
+ * Select a new host
  */
 export function selectNewHost(name) {
   config.setSelectedNewHost(name);
 
-  // Actualizar UI para mostrar la selección
+  // Update UI to show selection
   const characterCards = document.querySelectorAll(".character-card");
   characterCards.forEach((card) => {
     if (card.dataset.name === name) {
@@ -124,7 +119,7 @@ export function selectNewHost(name) {
     }
   });
 
-  // Habilitar botón de intercambio
+  // Enable swap button
   const swapButton = document.getElementById("swap-button");
   if (swapButton) {
     swapButton.disabled = false;
@@ -132,7 +127,7 @@ export function selectNewHost(name) {
 }
 
 /**
- * Realizar el intercambio de host
+ * Perform the host swap
  */
 export function swapHost() {
   if (!config.selectedNewHost) {
@@ -140,7 +135,7 @@ export function swapHost() {
     return;
   }
 
-  // Mostrar carga si está disponible
+  // Show loading if available
   const loadingElement = document.getElementById("loading");
   if (loadingElement) {
     loadingElement.style.display = "block";
@@ -150,8 +145,11 @@ export function swapHost() {
     let newSaveGameXml = config.originalFiles.saveGame;
     let newSaveGameInfoXml = config.originalFiles.saveGameInfo;
 
-    // Si se selecciona el host actual, no se necesitan cambios
-    if (config.hostCharacter && config.selectedNewHost === config.hostCharacter.name) {
+    // If the current host is selected, no changes are needed
+    if (
+      config.hostCharacter &&
+      config.selectedNewHost === config.hostCharacter.name
+    ) {
       showMessage("The selected character is already the host.", "info");
       if (loadingElement) {
         loadingElement.style.display = "none";
@@ -159,49 +157,49 @@ export function swapHost() {
       return;
     }
 
-    // Encontrar el ayudante seleccionado
+    // Find the selected farmhand
     const selectedFarmhand = config.farmhands.find(
       (fh) => fh.name === config.selectedNewHost
     );
 
     if (selectedFarmhand && config.hostCharacter) {
-      // Extraer datos necesarios
+      // Extract necessary data
       const hostData = config.hostCharacter.content;
       const farmhandData = selectedFarmhand.content;
 
-      // Convertir host a ayudante
+      // Convert host to farmhand
       const newFarmhandData = hostData
         .replace(/<player>/g, "<farmhand>")
         .replace(/<\/player>/g, "</farmhand>");
 
-      // Convertir ayudante a host
+      // Convert farmhand to host
       const newHostData = farmhandData
         .replace(/<farmhand>/g, "<player>")
         .replace(/<\/farmhand>/g, "</player>");
 
-      // Arreglar correo, eventos y niveles de actualización de casa
+      // Fix mail, events, and house upgrade levels
       const fixedNewHostData = fixHostData(newHostData, hostData);
 
-      // Crear nuevo XML de juego guardado reemplazando el contenido
+      // Create new save game XML by replacing content
       newSaveGameXml = newSaveGameXml.replace(hostData, fixedNewHostData);
       newSaveGameXml = newSaveGameXml.replace(farmhandData, newFarmhandData);
 
-      // Actualizar SaveGameInfo para contener información del nuevo host
-      // Extraer etiqueta Farmer de los datos del nuevo host
+      // Update SaveGameInfo to contain new host information
+      // Extract Farmer tag from new host data
       const farmerMatch = fixedNewHostData.match(
         /<Farmer>([\s\S]*?)<\/Farmer>/i
       );
       if (farmerMatch) {
         const farmerData = farmerMatch[0];
 
-        // SaveGameInfo contiene una etiqueta Farmer con atributos de espacio de nombres XML
+        // SaveGameInfo contains a Farmer tag with XML namespace attributes
         const xmlnsPattern =
           /<Farmer xmlns:xsi="http:\/\/www\.w3\.org\/2001\/XMLSchema-instance" xmlns:xsd="http:\/\/www\.w3\.org\/2001\/XMLSchema">([\s\S]*?)<\/Farmer>/;
         const saveGameInfoMatch =
           config.originalFiles.saveGameInfo.match(xmlnsPattern);
 
         if (saveGameInfoMatch) {
-          // Mantener los atributos de espacio de nombres XML pero reemplazar el contenido
+          // Keep XML namespace attributes but replace content
           const farmerContent = farmerData
             .replace(/<Farmer>/i, "")
             .replace(/<\/Farmer>/i, "");
@@ -212,7 +210,7 @@ export function swapHost() {
         }
       }
 
-      // Actualizar variables globales con nuevo contenido
+      // Update global variables with new content
       config.updateOriginalFiles("saveGame", newSaveGameXml);
       config.updateOriginalFiles("saveGameInfo", newSaveGameInfoXml);
 
@@ -222,11 +220,10 @@ export function swapHost() {
       return false;
     }
   } catch (error) {
-    console.error("Error swapping host:", error);
     showError("Error swapping host: " + error.message);
     return false;
   } finally {
-    // Ocultar carga
+    // Hide loading
     if (loadingElement) {
       loadingElement.style.display = "none";
     }

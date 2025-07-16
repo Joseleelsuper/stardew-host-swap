@@ -1,29 +1,27 @@
 /**
  * Stardew Valley Host Swap Tool - File Handler Module
- * Maneja la carga, procesamiento y descarga de archivos
  */
 
-import * as config from './config.js';
-import { showError, showMessage } from './utils.js';
-import { parseCharacters } from './characterHandler.js';
-// No importamos displayCharacters aquí para evitar dependencia circular
+import * as config from "./config.js";
+import { showError, showMessage } from "./utils.js";
+import { parseCharacters } from "./characterHandler.js";
 
 /**
- * Manejar la carga de archivos a través de input de archivo
+ * Handle file upload via file input
  */
 export function handleFileUpload(event) {
   event.preventDefault();
 
-  // Mostrar spinner de carga
+  // Show loading spinner
   document.getElementById("loading").style.display = "block";
 
-  // Ocultar la sección de resultados cuando se carga un nuevo archivo
+  // Hide the results section when a new file is loaded
   const resultSection = document.getElementById("result-section");
   if (resultSection) {
     resultSection.style.display = "none";
   }
 
-  // Resetear el estado del enlace de descarga
+  // Reset the download link state
   const downloadLink = document.getElementById("download-link");
   if (downloadLink) {
     downloadLink.style.pointerEvents = "none";
@@ -32,35 +30,35 @@ export function handleFileUpload(event) {
     downloadLink.title = "You must change the host first";
   }
 
-  // Obtener el archivo
+  // Get the file
   const file = event.target.files
     ? event.target.files[0]
     : event.dataTransfer.files[0];
 
   if (!file || !file.name.endsWith(".zip")) {
     showError(
-      "Por favor, sube un archivo .zip que contenga tu carpeta de guardado de Stardew Valley."
+      "Please upload a .zip file containing your Stardew Valley save folder."
     );
     document.getElementById("loading").style.display = "none";
     return;
   }
 
-  // Usar JSZip para extraer el contenido
+  // Use JSZip to extract the content
   const JSZip = window.JSZip;
   const zip = new JSZip();
 
   zip
     .loadAsync(file)
     .then(function (contents) {
-      // Resetear datos
+      // Reset data
       config.resetData();
 
       let foundSaveFile = false;
 
-      // Procesar cada archivo en el zip
+      // Process each file in the zip
       const promises = [];
 
-      // Primero, encontrar el patrón de nombre del archivo de guardado
+      // First, find the save file name pattern
       Object.keys(contents.files).forEach(function (filename) {
         if (
           !contents.files[filename].dir &&
@@ -68,7 +66,7 @@ export function handleFileUpload(event) {
           !filename.includes("SaveGameInfo") &&
           !filename.includes("AdditionalCropData")
         ) {
-          // Este debería ser el archivo de guardado principal
+          // This should be the main save file
           config.setSaveFileName(filename.split("/").pop());
           foundSaveFile = true;
         }
@@ -80,12 +78,12 @@ export function handleFileUpload(event) {
         );
       }
 
-      // Extraer los archivos que necesitamos
+      // Extract the files we need
       Object.keys(contents.files).forEach(function (filename) {
         if (!contents.files[filename].dir) {
           const cleanFileName = filename.split("/").pop();
 
-          // Archivo de guardado principal
+          // Main save file
           if (cleanFileName === config.saveFileName) {
             const promise = contents.files[filename]
               .async("text")
@@ -96,7 +94,7 @@ export function handleFileUpload(event) {
             promises.push(promise);
           }
 
-          // Archivo SaveGameInfo
+          // SaveGameInfo file
           if (cleanFileName === "SaveGameInfo") {
             const promise = contents.files[filename]
               .async("text")
@@ -107,7 +105,7 @@ export function handleFileUpload(event) {
             promises.push(promise);
           }
 
-          // Archivo AdditionalCropData
+          // AdditionalCropData file
           if (cleanFileName === "AdditionalCropData") {
             const promise = contents.files[filename]
               .async("text")
@@ -123,28 +121,29 @@ export function handleFileUpload(event) {
       return Promise.all(promises);
     })
     .then(function () {
-      if (!config.originalFiles.saveGame || !config.originalFiles.saveGameInfo) {
+      if (
+        !config.originalFiles.saveGame ||
+        !config.originalFiles.saveGameInfo
+      ) {
         throw new Error(
           "The ZIP file does not contain the required save files."
         );
       }
 
-      // Analizar archivos de guardado
+      // Parse save files
       const charactersProcessed = parseCharacters();
-      
+
       if (charactersProcessed) {
-        // Importar dinámicamente para evitar circular dependencies
-        import('./uiController.js').then(ui => {
-          console.log("Llamando a displayCharacters desde handleFileUpload");
+        // Dynamically import to avoid circular dependencies
+        import("./uiController.js").then((ui) => {
           ui.displayCharacters();
         });
       }
 
-      // Ocultar el spinner de carga
+      // Hide the loading spinner
       document.getElementById("loading").style.display = "none";
     })
     .catch(function (error) {
-      console.error("Error processing ZIP file:", error);
       showError(
         error.message ||
           "Error processing ZIP file. Please make sure it contains valid Stardew Valley save files."
@@ -154,7 +153,7 @@ export function handleFileUpload(event) {
 }
 
 /**
- * Manejar la entrada de texto tradicional para compatibilidad
+ * Handle traditional text input for compatibility
  */
 export function handleTextInput(e) {
   const saveGameXml = e.target.value;
@@ -163,7 +162,7 @@ export function handleTextInput(e) {
     return;
   }
 
-  // Ocultar la sección de resultados cuando se introduce nuevo texto
+  // Hide the results section when new text is entered
   const resultSection = document.getElementById("result-section");
   if (resultSection) {
     resultSection.style.display = "none";
@@ -172,49 +171,49 @@ export function handleTextInput(e) {
   config.updateOriginalFiles("saveGame", saveGameXml);
   config.updateBackupFiles("saveGame", saveGameXml);
 
-  // Generar un SaveGameInfo ficticio ya que no tenemos uno
-  const dummyInfo = '<Farmer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"></Farmer>';
+  // Generate a dummy SaveGameInfo since we don't have one
+  const dummyInfo =
+    '<Farmer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"></Farmer>';
   config.updateOriginalFiles("saveGameInfo", dummyInfo);
   config.updateBackupFiles("saveGameInfo", dummyInfo);
 
   const charactersProcessed = parseCharacters();
-  
+
   if (charactersProcessed) {
-    // Importar dinámicamente para evitar circular dependencies
-    import('./uiController.js').then(ui => {
-      console.log("Llamando a displayCharacters desde handleTextInput");
+    // Dynamically import to avoid circular dependencies
+    import("./uiController.js").then((ui) => {
       ui.displayCharacters();
     });
   }
 }
 
 /**
- * Crear archivo ZIP descargable con archivos de guardado modificados
+ * Create a downloadable ZIP file with modified save files
  */
 export function createDownload() {
-  // Mostrar indicador de carga durante la generación del ZIP
+  // Show loading indicator while generating the ZIP
   const loadingElement = document.getElementById("loading");
   if (loadingElement) {
     loadingElement.style.display = "block";
   }
 
-  // Mostrar mensaje informativo
-  showMessage(
-    "Preparando archivos para descargar... Por favor, espera un momento.",
-    "info"
-  );
+  // Show informational message
+  showMessage("Preparing files for download... Please wait a moment.", "info");
 
   const JSZip = window.JSZip;
   const zip = new JSZip();
 
-  // Extraer el nombre de la carpeta del archivo de guardado
+  // Extract the folder name from the save file
   const folderName = config.saveFileName.includes("_")
     ? config.saveFileName.split("_")[0]
     : config.saveFileName;
-  const folderNameWithSeed = config.saveFileName.split(".")[0]; // Quitamos extensión
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);
+  const folderNameWithSeed = config.saveFileName.split(".")[0]; // Remove extension
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[:.]/g, "-")
+    .substring(0, 19);
 
-  // Añadir carpeta de guardado principal - incluir timestamp para evitar conflictos
+  // Add main save folder - include timestamp to avoid conflicts
   const mainFolderName = `${folderNameWithSeed}_modified`;
   const saveFolder = zip.folder(mainFolderName);
 
@@ -227,107 +226,113 @@ export function createDownload() {
   }
 
   try {
-    // Crear una subcarpeta para los archivos modificados
+    // Create a subfolder for the modified files
     const modifiedFolder = saveFolder.folder("modified_files");
-    // Crear una subcarpeta para los backups
+    // Create a subfolder for the backups
     const backupFolder = saveFolder.folder("backup_files");
-    
+
     if (!modifiedFolder || !backupFolder) {
-      throw new Error("No se pudieron crear las subcarpetas necesarias");
+      throw new Error("Could not create necessary subfolders");
     }
 
-    // Añadir archivos de guardado a la carpeta de modificados
+    // Add save files to the modified folder
     modifiedFolder.file(config.saveFileName, config.originalFiles.saveGame);
     modifiedFolder.file("SaveGameInfo", config.originalFiles.saveGameInfo);
     if (config.originalFiles.additionalCropData) {
-      modifiedFolder.file("AdditionalCropData", config.originalFiles.additionalCropData);
+      modifiedFolder.file(
+        "AdditionalCropData",
+        config.originalFiles.additionalCropData
+      );
     }
 
-    // Añadir archivos de backup a la carpeta de backups
+    // Add backup files to the backup folder
     backupFolder.file(config.saveFileName, config.backupFiles.saveGame);
     backupFolder.file("SaveGameInfo", config.backupFiles.saveGameInfo);
     if (config.backupFiles.additionalCropData) {
-      backupFolder.file("AdditionalCropData", config.backupFiles.additionalCropData);
+      backupFolder.file(
+        "AdditionalCropData",
+        config.backupFiles.additionalCropData
+      );
     }
 
-    // Añadir archivo README con instrucciones
-    const readmeContent = `# Stardew Valley Host Swap - Archivos Modificados
+    // Add README file with instructions
+    const readmeContent = `# Stardew Valley Host Swap - Modified Files
 
-## Contenido
-Este archivo ZIP contiene:
-- /modified_files/ - Archivos con el nuevo host (${config.selectedNewHost}) que debes usar
-- /backup_files/ - Copia de seguridad de los archivos originales
+## Contents
+This ZIP file contains:
+- /modified_files/ - Files with the new host (${
+      config.selectedNewHost
+    }) that you should use
+- /backup_files/ - Backup of the original files
 
-## Instrucciones
-1. Extrae todo el contenido de la carpeta "modified_files" en tu carpeta de guardado de Stardew Valley
-2. El directorio debe ser: ${mainFolderName}
-3. Si tienes problemas, puedes restaurar los archivos originales de la carpeta "backup_files"
+## Instructions
+1. Extract all the contents of the "modified_files" folder into your Stardew Valley save folder
+2. The directory should be: ${mainFolderName}
+3. If you have problems, you can restore the original files from the "backup_files" folder
 
-## Generado el: ${new Date().toLocaleString()}
+## Generated on: ${new Date().toLocaleString()}
 `;
-    
+
     saveFolder.file("README.txt", readmeContent);
 
-    // Generar archivo ZIP con mejor compresión para archivos de texto
+    // Generate ZIP file with better compression for text files
     zip
-      .generateAsync({ 
+      .generateAsync({
         type: "blob",
         compression: "DEFLATE",
         compressionOptions: {
-          level: 9 // Máximo nivel de compresión
-        }
+          level: 9, // Maximum compression level
+        },
       })
       .then(function (content) {
         const downloadLink = document.getElementById("download-link");
         if (downloadLink) {
-          // Revocar cualquier URL anterior para evitar fugas de memoria
+          // Revoke any previous URL to avoid memory leaks
           if (downloadLink.href && downloadLink.href.startsWith("blob:")) {
             URL.revokeObjectURL(downloadLink.href);
           }
 
-          // Crear URL para descarga
+          // Create URL for download
           const url = URL.createObjectURL(content);
           downloadLink.href = url;
           downloadLink.download = `${mainFolderName}_${timestamp}.zip`;
           downloadLink.style.display = "inline-block";
 
-          // Ocultar indicador de carga
+          // Hide loading indicator
           if (loadingElement) {
             loadingElement.style.display = "none";
           }
 
-          // Añadir evento para mostrar mensaje al descargar
+          // Add event to show message on download
           downloadLink.onclick = function () {
             showMessage(
-              "¡Descarga iniciada! Recuerda extraer el contenido de la carpeta 'modified_files' en tu carpeta de guardados de Stardew Valley.",
+              "Download started! Remember to extract the contents of the 'modified_files' folder into your Stardew Valley saves folder.",
               "success"
             );
-            
-            // Programar la revocación de la URL del blob para evitar fugas de memoria
-            setTimeout(function() {
+
+            // Schedule revocation of the blob URL to prevent memory leaks
+            setTimeout(function () {
               URL.revokeObjectURL(url);
-            }, 60000); // Revocar después de 1 minuto
+            }, 60000); // Revoke after 1 minute
           };
-          
-          // Notificar que está listo para descargar
+
+          // Notify that it's ready to download
           showMessage(
-            "¡Archivos listos para descargar! Haz clic en el botón 'Download Modified Files'.",
+            "Files are ready to download! Click the 'Download Modified Files' button.",
             "success"
           );
         }
       })
       .catch(function (error) {
-        console.error("Error generando ZIP:", error);
         showError(
-          "Error al generar el archivo ZIP. Por favor, intenta de nuevo: " + error.message
+          "Error generating the ZIP file. Please try again: " + error.message
         );
         if (loadingElement) {
           loadingElement.style.display = "none";
         }
       });
   } catch (error) {
-    console.error("Error creating ZIP:", error);
-    showError("Error al crear el archivo ZIP: " + error.message);
+    showError("Error creating the ZIP file: " + error.message);
     if (loadingElement) {
       loadingElement.style.display = "none";
     }
