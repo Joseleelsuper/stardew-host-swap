@@ -225,6 +225,14 @@ export function createDownload() {
     // Get the base name without extension for file naming
     const baseSaveName = config.saveFileName.split('.')[0];
     
+    console.log("Creating download with modified files:");
+    console.log("Modified saveGame length:", config.originalFiles.saveGame.length);
+    console.log("Modified saveGameInfo length:", config.originalFiles.saveGameInfo.length);
+    console.log("Backup saveGame length:", config.backupFiles.saveGame.length);
+    console.log("Backup saveGameInfo length:", config.backupFiles.saveGameInfo.length);
+    console.log("SaveGame files are different:", config.originalFiles.saveGame !== config.backupFiles.saveGame);
+    console.log("SaveGameInfo files are different:", config.originalFiles.saveGameInfo !== config.backupFiles.saveGameInfo);
+    
     // Add modified files (without suffix)
     saveFolder.file(baseSaveName, config.originalFiles.saveGame);
     saveFolder.file("SaveGameInfo", config.originalFiles.saveGameInfo);

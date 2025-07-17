@@ -47,17 +47,13 @@ export const TRANSFERRABLE_EVENTS = [
 
 // Reset data
 export function resetData() {
-  originalFiles = {
-    saveGame: null,
-    saveGameInfo: null,
-    additionalCropData: null,
-  };
+  originalFiles.saveGame = null;
+  originalFiles.saveGameInfo = null;
+  originalFiles.additionalCropData = null;
 
-  backupFiles = {
-    saveGame: null,
-    saveGameInfo: null,
-    additionalCropData: null,
-  };
+  backupFiles.saveGame = null;
+  backupFiles.saveGameInfo = null;
+  backupFiles.additionalCropData = null;
 
   hostCharacter = null;
   farmhands = [];
@@ -83,6 +79,7 @@ export function setFarmhands(hands) {
 
 export function updateOriginalFiles(key, value) {
   originalFiles[key] = value;
+  console.log(`Updated originalFiles.${key} with value of length:`, value.length);
 }
 export function updateBackupFiles(key, value) {
   backupFiles[key] = value;

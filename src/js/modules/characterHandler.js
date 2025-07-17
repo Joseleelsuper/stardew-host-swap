@@ -167,52 +167,71 @@ export function swapHost() {
       const hostData = config.hostCharacter.content;
       const farmhandData = selectedFarmhand.content;
 
-      // Convert host to farmhand
-      const newFarmhandData = hostData
-        .replace(/<player>/g, "<farmhand>")
-        .replace(/<\/player>/g, "</farmhand>");
+      // Convert host to farmhand based on the farmhand type
+      let newFarmhandData;
+      if (selectedFarmhand.type === "farmhand") {
+        newFarmhandData = hostData
+          .replace(/<player>/g, "<farmhand>")
+          .replace(/<\/player>/g, "</farmhand>");
+      } else if (selectedFarmhand.type === "farmer") {
+        newFarmhandData = hostData
+          .replace(/<player>/g, "<Farmer>")
+          .replace(/<\/player>/g, "</Farmer>");
+      }
 
-      // Convert farmhand to host
-      const newHostData = farmhandData
-        .replace(/<farmhand>/g, "<player>")
-        .replace(/<\/farmhand>/g, "</player>");
+      // Convert farmhand to host based on the current farmhand structure
+      let newHostData;
+      if (selectedFarmhand.type === "farmhand") {
+        newHostData = farmhandData
+          .replace(/<farmhand>/g, "<player>")
+          .replace(/<\/farmhand>/g, "</player>");
+      } else if (selectedFarmhand.type === "farmer") {
+        newHostData = farmhandData
+          .replace(/<Farmer>/g, "<player>")
+          .replace(/<\/Farmer>/g, "</player>");
+      }
 
       // Fix mail, events, and house upgrade levels
       const fixedNewHostData = fixHostData(newHostData, hostData);
 
       // Create new save game XML by replacing content
+      console.log("Before swap - Host data length:", hostData.length);
+      console.log("Before swap - Farmhand data length:", farmhandData.length);
+      console.log("Host data found in XML:", newSaveGameXml.includes(hostData));
+      console.log("Farmhand data found in XML:", newSaveGameXml.includes(farmhandData));
+      
+      const originalLength = newSaveGameXml.length;
       newSaveGameXml = newSaveGameXml.replace(hostData, fixedNewHostData);
+      console.log("After host replacement - length changed:", newSaveGameXml.length !== originalLength);
+      
+      const afterHostLength = newSaveGameXml.length;
       newSaveGameXml = newSaveGameXml.replace(farmhandData, newFarmhandData);
+      console.log("After farmhand replacement - length changed:", newSaveGameXml.length !== afterHostLength);
+      
+      console.log("After swap - New save game XML length:", newSaveGameXml.length);
+      console.log("Original save game XML length:", config.originalFiles.saveGame.length);
+      console.log("Changes made:", newSaveGameXml !== config.originalFiles.saveGame);
 
       // Update SaveGameInfo to contain new host information
-      // Extract Farmer tag from new host data
-      const farmerMatch = fixedNewHostData.match(
-        /<Farmer>([\s\S]*?)<\/Farmer>/i
-      );
-      if (farmerMatch) {
-        const farmerData = farmerMatch[0];
-
-        // SaveGameInfo contains a Farmer tag with XML namespace attributes
-        const xmlnsPattern =
-          /<Farmer xmlns:xsi="http:\/\/www\.w3\.org\/2001\/XMLSchema-instance" xmlns:xsd="http:\/\/www\.w3\.org\/2001\/XMLSchema">([\s\S]*?)<\/Farmer>/;
-        const saveGameInfoMatch =
-          config.originalFiles.saveGameInfo.match(xmlnsPattern);
-
-        if (saveGameInfoMatch) {
-          // Keep XML namespace attributes but replace content
-          const farmerContent = farmerData
-            .replace(/<Farmer>/i, "")
-            .replace(/<\/Farmer>/i, "");
-          newSaveGameInfoXml = config.originalFiles.saveGameInfo.replace(
-            xmlnsPattern,
-            `<Farmer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">${farmerContent}</Farmer>`
-          );
-        }
-      }
+      console.log("Updating SaveGameInfo...");
+      console.log("Original SaveGameInfo length:", config.originalFiles.saveGameInfo.length);
+      
+      newSaveGameInfoXml = updateSaveGameInfo(fixedNewHostData, config.originalFiles.saveGameInfo);
+      
+      console.log("Updated SaveGameInfo length:", newSaveGameInfoXml.length);
+      console.log("SaveGameInfo changed:", newSaveGameInfoXml !== config.originalFiles.saveGameInfo);
 
       // Update global variables with new content
       config.updateOriginalFiles("saveGame", newSaveGameXml);
       config.updateOriginalFiles("saveGameInfo", newSaveGameInfoXml);
+      
+      console.log("=== FINAL VERIFICATION ===");
+      console.log("SaveGame changed:", 
+        config.originalFiles.saveGame !== config.backupFiles.saveGame);
+      console.log("SaveGameInfo changed:", 
+        config.originalFiles.saveGameInfo !== config.backupFiles.saveGameInfo);
+      console.log("SaveGame length:", config.originalFiles.saveGame.length);
+      console.log("SaveGameInfo length:", config.originalFiles.saveGameInfo.length);
 
       return true;
     } else {
@@ -228,4 +247,60 @@ export function swapHost() {
       loadingElement.style.display = "none";
     }
   }
+}
+
+/**
+ * Update SaveGameInfo with new host data
+ */
+function updateSaveGameInfo(newHostData, originalSaveGameInfo) {
+  console.log("Updating SaveGameInfo with new host data...");
+  
+  // First, remove any player tags if they exist and extract the content
+  let farmerContent;
+  
+  if (newHostData.includes('<player>') && newHostData.includes('</player>')) {
+    // Extract content from player tags (remove player wrapper)
+    const playerMatch = newHostData.match(/<player>([\s\S]*?)<\/player>/i);
+    if (!playerMatch) {
+      console.error("No player data found in player block");
+      return originalSaveGameInfo;
+    }
+    farmerContent = playerMatch[1];
+    console.log("Extracted content from player tags, length:", farmerContent.length);
+  } else if (newHostData.includes('<Farmer') && newHostData.includes('</Farmer>')) {
+    // Complete Farmer block - extract just the content
+    const farmerMatch = newHostData.match(/<Farmer[^>]*>([\s\S]*?)<\/Farmer>/i);
+    if (!farmerMatch) {
+      console.error("No Farmer data found in complete block");
+      return originalSaveGameInfo;
+    }
+    farmerContent = farmerMatch[1];
+    console.log("Extracted farmer content from complete block, length:", farmerContent.length);
+  } else {
+    // Just the content - use as is
+    farmerContent = newHostData;
+    console.log("Using raw farmer content, length:", farmerContent.length);
+  }
+  
+  // For SaveGameInfo, we need to preserve the XML declaration and namespace attributes
+  // Check if the original has XML declaration
+  const xmlDeclarationMatch = originalSaveGameInfo.match(/^<\?xml[^>]+\?>/);
+  const xmlDeclaration = xmlDeclarationMatch ? xmlDeclarationMatch[0] : '';
+  
+  // Build the complete Farmer block with namespaces (no player tags)
+  const farmerBlockWithNamespaces = `<Farmer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">${farmerContent}</Farmer>`;
+  
+  // The SaveGameInfo should be the XML declaration + the complete Farmer block
+  let newSaveGameInfo;
+  
+  if (xmlDeclaration) {
+    newSaveGameInfo = xmlDeclaration + farmerBlockWithNamespaces;
+  } else {
+    newSaveGameInfo = farmerBlockWithNamespaces;
+  }
+  
+  console.log("New SaveGameInfo created, length:", newSaveGameInfo.length);
+  console.log("SaveGameInfo successfully updated (player tags removed)");
+  
+  return newSaveGameInfo;
 }
