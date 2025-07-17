@@ -191,8 +191,25 @@ export function swapHost() {
           .replace(/<\/Farmer>/g, "</player>");
       }
 
-      // Fix mail, events, and house upgrade levels
-      const fixedNewHostData = fixHostData(newHostData, hostData);
+      // Swap unique IDs between host and farmhand
+      const idSwapResult = swapPlayerIDs(newHostData, hostData);
+      const newHostDataWithSwappedId = idSwapResult.newHostData;
+      const oldHostDataWithSwappedId = idSwapResult.oldHostData;
+
+      // Fix mail, events, and house upgrade levels (using the ID-swapped data)
+      const fixedNewHostData = fixHostData(newHostDataWithSwappedId, oldHostDataWithSwappedId);
+      
+      // Convert old host to farmhand with swapped ID
+      let newFarmhandDataWithSwappedId;
+      if (selectedFarmhand.type === "farmhand") {
+        newFarmhandDataWithSwappedId = oldHostDataWithSwappedId
+          .replace(/<player>/g, "<farmhand>")
+          .replace(/<\/player>/g, "</farmhand>");
+      } else if (selectedFarmhand.type === "farmer") {
+        newFarmhandDataWithSwappedId = oldHostDataWithSwappedId
+          .replace(/<player>/g, "<Farmer>")
+          .replace(/<\/Farmer>/g, "</Farmer>");
+      }
 
       // Create new save game XML by replacing content
       console.log("Before swap - Host data length:", hostData.length);
@@ -205,7 +222,7 @@ export function swapHost() {
       console.log("After host replacement - length changed:", newSaveGameXml.length !== originalLength);
       
       const afterHostLength = newSaveGameXml.length;
-      newSaveGameXml = newSaveGameXml.replace(farmhandData, newFarmhandData);
+      newSaveGameXml = newSaveGameXml.replace(farmhandData, newFarmhandDataWithSwappedId);
       console.log("After farmhand replacement - length changed:", newSaveGameXml.length !== afterHostLength);
       
       console.log("After swap - New save game XML length:", newSaveGameXml.length);
@@ -220,6 +237,16 @@ export function swapHost() {
       
       console.log("Updated SaveGameInfo length:", newSaveGameInfoXml.length);
       console.log("SaveGameInfo changed:", newSaveGameInfoXml !== config.originalFiles.saveGameInfo);
+
+      // Swap unique IDs between host and farmhand
+      const { newHostData: swappedNewHostData, oldHostData: swappedOldHostData } = swapPlayerIDs(
+        fixedNewHostData,
+        hostData
+      );
+
+      // Update new save game XML with swapped IDs
+      newSaveGameXml = newSaveGameXml.replace(fixedNewHostData, swappedNewHostData);
+      newSaveGameXml = newSaveGameXml.replace(farmhandData, newFarmhandData);
 
       // Update global variables with new content
       config.updateOriginalFiles("saveGame", newSaveGameXml);
@@ -247,6 +274,51 @@ export function swapHost() {
       loadingElement.style.display = "none";
     }
   }
+}
+
+/**
+ * Swap unique IDs between the old host and new host to ensure proper identification
+ */
+function swapPlayerIDs(newHostData, oldHostData) {
+  console.log("Swapping player IDs between old and new host...");
+  
+  // Extract unique ID from old host
+  const oldHostIdMatch = oldHostData.match(/<UniqueMultiplayerID>(\d+)<\/UniqueMultiplayerID>/);
+  const oldHostId = oldHostIdMatch ? oldHostIdMatch[1] : null;
+  
+  // Extract unique ID from new host
+  const newHostIdMatch = newHostData.match(/<UniqueMultiplayerID>(\d+)<\/UniqueMultiplayerID>/);
+  const newHostId = newHostIdMatch ? newHostIdMatch[1] : null;
+  
+  console.log("Old host ID:", oldHostId);
+  console.log("New host ID:", newHostId);
+  
+  let swappedNewHostData = newHostData;
+  let swappedOldHostData = oldHostData;
+  
+  // Swap the UniqueMultiplayerID fields if they exist
+  if (oldHostId && newHostId) {
+    // Give the new host the old host's ID (usually 0 for the host)
+    swappedNewHostData = newHostData.replace(
+      `<UniqueMultiplayerID>${newHostId}</UniqueMultiplayerID>`,
+      `<UniqueMultiplayerID>${oldHostId}</UniqueMultiplayerID>`
+    );
+    
+    // Give the old host (now farmhand) the new host's old ID
+    swappedOldHostData = oldHostData.replace(
+      `<UniqueMultiplayerID>${oldHostId}</UniqueMultiplayerID>`,
+      `<UniqueMultiplayerID>${newHostId}</UniqueMultiplayerID>`
+    );
+    
+    console.log("Successfully swapped UniqueMultiplayerID fields");
+  } else {
+    console.log("UniqueMultiplayerID fields not found or incomplete");
+  }
+  
+  return {
+    newHostData: swappedNewHostData,
+    oldHostData: swappedOldHostData
+  };
 }
 
 /**
