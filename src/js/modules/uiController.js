@@ -4,7 +4,7 @@
  */
 
 import * as config from "./config.js";
-import { showMessage, showError, copyToClipboard } from "./utils.js";
+import { showMessage, showError, copyToClipboard, removeBOM } from "./utils.js";
 import { selectNewHost, swapHost } from "./characterHandler.js";
 import { createDownload, handleFileUpload } from "./fileHandler.js";
 
@@ -207,11 +207,11 @@ function populateCopyTextareas() {
   const saveGameInfoTextarea = document.getElementById("saveGameInfo-text");
   
   if (saveGameTextarea && config.originalFiles.saveGame) {
-    saveGameTextarea.value = config.originalFiles.saveGame;
+    saveGameTextarea.value = removeBOM(config.originalFiles.saveGame);
   }
   
   if (saveGameInfoTextarea && config.originalFiles.saveGameInfo) {
-    saveGameInfoTextarea.value = config.originalFiles.saveGameInfo;
+    saveGameInfoTextarea.value = removeBOM(config.originalFiles.saveGameInfo);
   }
 }
 

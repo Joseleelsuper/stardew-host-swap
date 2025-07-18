@@ -3,7 +3,7 @@
  */
 
 import * as config from "./config.js";
-import { showError, showMessage } from "./utils.js";
+import { showError, showMessage, removeBOM } from "./utils.js";
 import { parseCharacters } from "./characterHandler.js";
 
 /**
@@ -99,8 +99,9 @@ export function handleFileUpload(event) {
             const promise = contents.files[filename]
               .async("text")
               .then(function (content) {
-                config.updateOriginalFiles("saveGame", content);
-                config.updateBackupFiles("saveGame", content);
+                const cleanContent = removeBOM(content);
+                config.updateOriginalFiles("saveGame", cleanContent);
+                config.updateBackupFiles("saveGame", cleanContent);
               });
             promises.push(promise);
           }
@@ -110,8 +111,9 @@ export function handleFileUpload(event) {
             const promise = contents.files[filename]
               .async("text")
               .then(function (content) {
-                config.updateOriginalFiles("saveGameInfo", content);
-                config.updateBackupFiles("saveGameInfo", content);
+                const cleanContent = removeBOM(content);
+                config.updateOriginalFiles("saveGameInfo", cleanContent);
+                config.updateBackupFiles("saveGameInfo", cleanContent);
               });
             promises.push(promise);
           }
@@ -121,8 +123,9 @@ export function handleFileUpload(event) {
             const promise = contents.files[filename]
               .async("text")
               .then(function (content) {
-                config.updateOriginalFiles("additionalCropData", content);
-                config.updateBackupFiles("additionalCropData", content);
+                const cleanContent = removeBOM(content);
+                config.updateOriginalFiles("additionalCropData", cleanContent);
+                config.updateBackupFiles("additionalCropData", cleanContent);
               });
             promises.push(promise);
           }
