@@ -141,18 +141,29 @@
                 <ul>
                     <li>Different people may see different amounts of things donated to the community center. Have the host place donations to be safe.</li>
                     <li>The TV shows different luck levels for different players</li>
-                    <li>The software is so good that if you try to upload the modified ZIP file, it will detect the host as the old host and not the current host. This do not happen with the legacy paste method and do not affect the ingame host change.</li>
-                    <li>Some Farmers will be not be able to become host of the farm. This is caused by tags not in the Farmer information.</li>
+                    <li>The software is so good that if you try to upload the modified ZIP file, it will detect the host as the old host and not the current host. This does not happen with the legacy paste method and does not affect the in-game host change.</li>
+                    <li>Some rare progression flags or achievements may not transfer if they use non-standard XML structures.</li>
                 </ul>
                 
                 <h3>Issues Fixed</h3>
                 <p>Issues fixed (18/07/2025):
                 <ul>
                     <li><strike><i>The level of the principal Farm house may be reset to 1 when the new host is added</i></strike>
-                    <i>(This happened because it was necesary to change in the XML some information from the old host to the new host)</i></li>
+                    <i>(Fixed: House upgrade levels are now properly transferred to the new host)</i></li>
                     <li><strike><i>New host may get outdated mail</i></strike>
-                    <i>(Thanks to the transfer of important events to the new host from the old host, you should no longer receive emails. If this error still occurs, you can report it in an issue)</i></li>
-                    <li><strike><i>Host shown on load screen stays original host when first loading</i></strike></li>
+                    <i>(Fixed: All critical mail including community center, Joja, mine access, and other progression mails are transferred)</i></li>
+                    <li><strike><i>Host shown on load screen stays original host when first loading</i></strike>
+                    <i>(Fixed: SaveGameInfo is properly updated with new host information)</i></li>
+                    <li><strike><i>Mailbox ownership issues ("This mailbox is not yours")</i></strike>
+                    <i>(Fixed: homeLocation, UniqueMultiplayerID, and cabin ownership references are properly updated)</i></li>
+                    <li><strike><i>Missing progression flags (keys, abilities, unlocks)</i></strike>
+                    <i>(Fixed: Critical progression flags like hasRustyKey, canUnderstandDwarves, hasClubCard, etc. are transferred)</i></li>
+                    <li><strike><i>Sleep location inconsistencies</i></strike>
+                    <i>(Fixed: lastSleepLocation is updated to match new home assignments)</i></li>
+                    <li><strike><i>Cabin ownership not updated in buildings</i></strike>
+                    <i>(Fixed: farmhandReference and owner fields in cabin buildings are updated)</i></li>
+                    <li><strike><i>BOM (Byte Order Mark) characters in copied XML</i></strike>
+                    <i>(Fixed: BOM characters are automatically removed from all file operations)</i></li>
                 </ul>
                 <p>Issues fixed (9/23/2018):
                 <ul>
