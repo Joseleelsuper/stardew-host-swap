@@ -283,3 +283,147 @@ export function updateCabinOwnership(saveGameXml, oldHostId, newHostId) {
   
   return updatedXml;
 }
+
+/**
+ * Fix old host data when they become a farmhand
+ * This transfers necessary data from the new host to the old host
+ * @param {string} oldHostContent - The old host's content (who becomes farmhand)
+ * @param {string} newHostOriginalContent - The original content of who becomes new host
+ * @returns {string} - Fixed old host content for farmhand role
+ */
+export function fixOldHostAsFarmhand(oldHostContent, newHostOriginalContent) {
+  console.log("=== FIXING OLD HOST AS FARMHAND ===");
+  
+  let fixedContent = oldHostContent;
+  
+  // 1. Transfer the new host's original homeLocation (their cabin) to old host
+  fixedContent = transferHomeLocationFromNewHost(fixedContent, newHostOriginalContent);
+  
+  // 2. Transfer relevant cabin-related data
+  fixedContent = transferCabinRelatedData(fixedContent, newHostOriginalContent);
+  
+  // 3. Update sleep location to match new home
+  fixedContent = updateFarmhandSleepLocation(fixedContent, newHostOriginalContent);
+  
+  // 4. Preserve some old host's important data that shouldn't change
+  fixedContent = preserveImportantHostData(fixedContent, oldHostContent);
+  
+  console.log("=== OLD HOST FARMHAND FIXES COMPLETED ===");
+  return fixedContent;
+}
+
+/**
+ * Transfer home location from new host's original data to old host
+ */
+function transferHomeLocationFromNewHost(oldHostContent, newHostOriginalContent) {
+  console.log("Transferring home location from new host to old host...");
+  
+  try {
+    const newHostHomeMatch = newHostOriginalContent.match(/<homeLocation>(.*?)<\/homeLocation>/);
+    const newHostOriginalHome = newHostHomeMatch ? newHostHomeMatch[1] : "FarmHouse";
+    
+    console.log("New host's original home location:", newHostOriginalHome);
+    
+    // If new host had a cabin, old host should inherit it
+    if (newHostOriginalHome && newHostOriginalHome !== "FarmHouse") {
+      return setFarmhandHomeLocation(oldHostContent, newHostOriginalHome);
+    } else {
+      // Fallback: keep old host in FarmHouse (shouldn't normally happen)
+      console.log("New host was in FarmHouse, keeping old host in FarmHouse as fallback");
+      return setFarmhandHomeLocation(oldHostContent, "FarmHouse");
+    }
+  } catch (error) {
+    console.log("Error transferring home location:", error.message);
+    return oldHostContent;
+  }
+}
+
+/**
+ * Transfer cabin-related data from new host to old host
+ */
+function transferCabinRelatedData(oldHostContent, newHostOriginalContent) {
+  console.log("Transferring cabin-related data...");
+  
+  let result = oldHostContent;
+  
+  // Data that should be transferred from the new host's original cabin setup
+  const CABIN_RELATED_DATA = [
+    "cabinStyle", // Cabin appearance style
+    "mailboxPosition", // Position of mailbox relative to cabin
+    "farmhandSpouse", // Spouse living in the cabin (if any)
+  ];
+  
+  for (let data of CABIN_RELATED_DATA) {
+    try {
+      const sourceParts = isolateTag(newHostOriginalContent, data);
+      if (sourceParts[1]) {
+        const destParts = isolateTag(result, data);
+        result = destParts[0] + sourceParts[1] + destParts[2];
+        console.log(`Transferred ${data}: ${sourceParts[1]}`);
+      }
+    } catch (error) {
+      console.log(`Could not transfer ${data}:`, error.message);
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Update farmhand's sleep location to match their new home
+ */
+function updateFarmhandSleepLocation(farmhandContent, newHostOriginalContent) {
+  console.log("Updating farmhand sleep location...");
+  
+  try {
+    // Get the home location that we're setting for this farmhand
+    const homeMatch = newHostOriginalContent.match(/<homeLocation>(.*?)<\/homeLocation>/);
+    const homeLocation = homeMatch ? homeMatch[1] : "FarmHouse";
+    
+    const parts = isolateTag(farmhandContent, "lastSleepLocation");
+    
+    console.log(`Setting lastSleepLocation to: ${homeLocation}`);
+    return parts[0] + homeLocation + parts[2];
+  } catch (error) {
+    console.log("Could not update farmhand sleep location:", error.message);
+    return farmhandContent;
+  }
+}
+
+/**
+ * Preserve important data that the old host should keep
+ */
+function preserveImportantHostData(newContent, originalOldHostContent) {
+  console.log("Preserving important old host data...");
+  
+  let result = newContent;
+  
+  // Data that the old host should keep (personal achievements, relationships, etc.)
+  const PRESERVE_DATA = [
+    "spouse", // Marriage status
+    "divorceTonight", // Divorce status  
+    "friendshipData", // Personal relationships
+    "achievements", // Personal achievements
+    "fishCaught", // Personal fishing records
+    "archaeologyFound", // Personal archaeology finds
+    "mineralsFound", // Personal mineral collection
+    "recipesCooked", // Personal cooking records
+    "stats", // Personal statistics
+    "personalInventory", // Some personal inventory items
+  ];
+  
+  for (let data of PRESERVE_DATA) {
+    try {
+      const originalParts = isolateTag(originalOldHostContent, data);
+      if (originalParts[1]) {
+        const destParts = isolateTag(result, data);
+        result = destParts[0] + originalParts[1] + destParts[2];
+        console.log(`Preserved old host's ${data}`);
+      }
+    } catch (error) {
+      console.log(`Could not preserve ${data}:`, error.message);
+    }
+  }
+  
+  return result;
+}
