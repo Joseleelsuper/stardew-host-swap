@@ -104,6 +104,36 @@
                         <li>If something goes wrong, you can restore the original files from the "backup_files" folder</li>
                     </ol>
                 </div>
+                
+                <div class="section-divider result-divider">
+                    <span class="divider-text">OR</span>
+                </div>
+                
+                <div id="copy-section" class="copy-section">
+                    <h3>Copy Files Directly</h3>
+                    <p>Alternatively, you can copy the modified files directly:</p>
+                    
+                    <div class="file-tabs">
+                        <button class="tab-button active" data-file="saveGame">Save Game</button>
+                        <button class="tab-button" data-file="saveGameInfo">Save Game Info</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="saveGame-content">
+                            <textarea id="saveGame-text" readonly class="copy-textarea"></textarea>
+                            <button class="copy-button" data-target="saveGame-text">Copy to Clipboard</button>
+                        </div>
+                        <div class="tab-pane" id="saveGameInfo-content">
+                            <textarea id="saveGameInfo-text" readonly class="copy-textarea"></textarea>
+                            <button class="copy-button" data-target="saveGameInfo-text">Copy to Clipboard</button>
+                        </div>
+                    </div>
+                    
+                    <div class="copy-instructions">
+                        <p>After copying, paste the content into your save files, overwriting the previous content.</p>
+                        <p>Remember to back up your original files first!</p>
+                    </div>
+                </div>
             </section>
             
             <section class="issues-section">

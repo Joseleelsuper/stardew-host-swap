@@ -185,11 +185,33 @@ export function handleSwapButtonClick() {
 
     // Create download
     createDownload();
+    
+    // Populate copy textareas
+    populateCopyTextareas();
+    
+    // Setup tabs and copy functionality
+    setupTabsAndCopy();
 
     showMessage(
       `Host successfully changed to ${config.selectedNewHost}!`,
       "success"
     );
+  }
+}
+
+/**
+ * Populate the copy textareas with the modified save files
+ */
+function populateCopyTextareas() {
+  const saveGameTextarea = document.getElementById("saveGame-text");
+  const saveGameInfoTextarea = document.getElementById("saveGameInfo-text");
+  
+  if (saveGameTextarea && config.originalFiles.saveGame) {
+    saveGameTextarea.value = config.originalFiles.saveGame;
+  }
+  
+  if (saveGameInfoTextarea && config.originalFiles.saveGameInfo) {
+    saveGameInfoTextarea.value = config.originalFiles.saveGameInfo;
   }
 }
 
@@ -223,6 +245,9 @@ export function setupUIEventListeners() {
   if (swapButton) {
     swapButton.addEventListener("click", handleSwapButtonClick);
   }
+  
+  // Setup tabs and copy functionality for direct file copying
+  setupTabsAndCopy();
 }
 
 /**
@@ -237,4 +262,43 @@ export function copyToClipboardLegacy() {
       "Modified save file copied to clipboard!"
     );
   }
+}
+
+/**
+ * Setup tabs in the copy section
+ */
+function setupTabsAndCopy() {
+  // Setup tabs
+  const tabButtons = document.querySelectorAll('.tab-button');
+  
+  if (tabButtons.length === 0) {
+    return;
+  }
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // Remove active class from all buttons and panes
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+      
+      // Add active class to current button
+      this.classList.add('active');
+      
+      // Show corresponding pane
+      const target = this.getAttribute('data-file');
+      document.getElementById(`${target}-content`).classList.add('active');
+    });
+  });
+  
+  // Setup copy buttons
+  const copyButtons = document.querySelectorAll('.copy-button');
+  
+  copyButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-target');
+      const textarea = document.getElementById(targetId);
+      
+      copyToClipboard(textarea.value, `${targetId.split('-')[0]} file copied to clipboard!`);
+    });
+  });
 }
