@@ -163,102 +163,100 @@ export function swapHost() {
     );
 
     if (selectedFarmhand && config.hostCharacter) {
-      // Extract necessary data
-      const hostData = config.hostCharacter.content;
-      const farmhandData = selectedFarmhand.content;
+      console.log("=== STARTING HOST SWAP ===");
+      console.log("Current host:", config.hostCharacter.name);
+      console.log("New host:", config.selectedNewHost);
+      console.log("Farmhand type:", selectedFarmhand.type);
 
-      // Convert host to farmhand based on the farmhand type
-      let newFarmhandData;
-      if (selectedFarmhand.type === "farmhand") {
-        newFarmhandData = hostData
-          .replace(/<player>/g, "<farmhand>")
-          .replace(/<\/player>/g, "</farmhand>");
-      } else if (selectedFarmhand.type === "farmer") {
-        newFarmhandData = hostData
-          .replace(/<player>/g, "<Farmer>")
-          .replace(/<\/player>/g, "</Farmer>");
-      }
+      // Extract the complete blocks including tags
+      const originalHostBlock = config.hostCharacter.content; // <player>...</player>
+      const originalFarmhandBlock = selectedFarmhand.content; // <farmhand>...</farmhand> or <Farmer>...</Farmer>
 
-      // Convert farmhand to host based on the current farmhand structure
-      let newHostData;
-      if (selectedFarmhand.type === "farmhand") {
-        newHostData = farmhandData
-          .replace(/<farmhand>/g, "<player>")
-          .replace(/<\/farmhand>/g, "</player>");
-      } else if (selectedFarmhand.type === "farmer") {
-        newHostData = farmhandData
-          .replace(/<Farmer>/g, "<player>")
-          .replace(/<\/Farmer>/g, "</player>");
-      }
-
-      // Swap unique IDs between host and farmhand
-      const idSwapResult = swapPlayerIDs(newHostData, hostData);
-      const newHostDataWithSwappedId = idSwapResult.newHostData;
-      const oldHostDataWithSwappedId = idSwapResult.oldHostData;
-
-      // Fix mail, events, and house upgrade levels (using the ID-swapped data)
-      const fixedNewHostData = fixHostData(newHostDataWithSwappedId, oldHostDataWithSwappedId);
+      console.log("Original host block length:", originalHostBlock.length);
+      console.log("Original farmhand block length:", originalFarmhandBlock.length);
       
-      // Convert old host to farmhand with swapped ID
-      let newFarmhandDataWithSwappedId;
-      if (selectedFarmhand.type === "farmhand") {
-        newFarmhandDataWithSwappedId = oldHostDataWithSwappedId
-          .replace(/<player>/g, "<farmhand>")
-          .replace(/<\/player>/g, "</farmhand>");
-      } else if (selectedFarmhand.type === "farmer") {
-        newFarmhandDataWithSwappedId = oldHostDataWithSwappedId
-          .replace(/<player>/g, "<Farmer>")
-          .replace(/<\/Farmer>/g, "</Farmer>");
+      // Validate that we have complete blocks
+      if (!originalHostBlock || !originalFarmhandBlock) {
+        throw new Error("Missing character data blocks");
       }
 
-      // Create new save game XML by replacing content
-      console.log("Before swap - Host data length:", hostData.length);
-      console.log("Before swap - Farmhand data length:", farmhandData.length);
-      console.log("Host data found in XML:", newSaveGameXml.includes(hostData));
-      console.log("Farmhand data found in XML:", newSaveGameXml.includes(farmhandData));
+      // Extract just the inner content (without the wrapper tags)
+      const hostInnerContent = extractInnerContent(originalHostBlock, "player");
+      const farmhandInnerContent = extractInnerContent(originalFarmhandBlock, selectedFarmhand.type);
+
+      console.log("Extracted host inner content length:", hostInnerContent.length);
+      console.log("Extracted farmhand inner content length:", farmhandInnerContent.length);
       
-      const originalLength = newSaveGameXml.length;
-      newSaveGameXml = newSaveGameXml.replace(hostData, fixedNewHostData);
-      console.log("After host replacement - length changed:", newSaveGameXml.length !== originalLength);
+      // Validate extraction was successful
+      if (!hostInnerContent || !farmhandInnerContent) {
+        throw new Error("Failed to extract inner content from character blocks");
+      }
+
+      // Swap the UniqueMultiplayerID values in the inner content
+      const { newHostContent, newFarmhandContent } = swapPlayerIDs(farmhandInnerContent, hostInnerContent);
+
+      console.log("After ID swap - new host content length:", newHostContent.length);
+      console.log("After ID swap - new farmhand content length:", newFarmhandContent.length);
+
+      // Apply data fixes to the new host content (mail, events, house upgrades, etc.)
+      const fixedNewHostContent = fixHostData(
+        `<player>${newHostContent}</player>`, 
+        `<player>${hostInnerContent}</player>`
+      );
+      const finalNewHostContent = extractInnerContent(fixedNewHostContent, "player");
+
+      console.log("After fixes - final new host content length:", finalNewHostContent.length);
+
+      // Create the new blocks by wrapping the swapped content with the original tags
+      const newHostBlock = `<player>${finalNewHostContent}</player>`;
+      let newFarmhandBlock;
+      if (selectedFarmhand.type === "farmhand") {
+        newFarmhandBlock = `<farmhand>${newFarmhandContent}</farmhand>`;
+      } else if (selectedFarmhand.type === "farmer") {
+        newFarmhandBlock = `<Farmer>${newFarmhandContent}</Farmer>`;
+      }
+
+      // Validate new blocks
+      console.log("New host block length:", newHostBlock.length);
+      console.log("New farmhand block length:", newFarmhandBlock.length);
+      
+      if (!newHostBlock || !newFarmhandBlock || newHostBlock.length < 100 || newFarmhandBlock.length < 100) {
+        throw new Error("Generated blocks are too short or invalid");
+      }
+
+      console.log("=== PERFORMING REPLACEMENTS ===");
+      console.log("Original host block found:", newSaveGameXml.includes(originalHostBlock));
+      console.log("Original farmhand block found:", newSaveGameXml.includes(originalFarmhandBlock));
+
+      // Replace the complete blocks in the save game XML
+      // The tags stay in their original positions, only the content changes
+      const beforeLength = newSaveGameXml.length;
+      newSaveGameXml = newSaveGameXml.replace(originalHostBlock, newHostBlock);
+      console.log("Host replacement successful:", newSaveGameXml.length !== beforeLength);
       
       const afterHostLength = newSaveGameXml.length;
-      newSaveGameXml = newSaveGameXml.replace(farmhandData, newFarmhandDataWithSwappedId);
-      console.log("After farmhand replacement - length changed:", newSaveGameXml.length !== afterHostLength);
+      newSaveGameXml = newSaveGameXml.replace(originalFarmhandBlock, newFarmhandBlock);
+      console.log("Farmhand replacement successful:", newSaveGameXml.length !== afterHostLength);
       
-      console.log("After swap - New save game XML length:", newSaveGameXml.length);
+      // Validate final XML length
+      if (newSaveGameXml.length < config.originalFiles.saveGame.length * 0.8) {
+        throw new Error("Final XML is suspiciously short - possible data loss");
+      }
+      
+      console.log("Final save game XML length:", newSaveGameXml.length);
       console.log("Original save game XML length:", config.originalFiles.saveGame.length);
-      console.log("Changes made:", newSaveGameXml !== config.originalFiles.saveGame);
 
-      // Update SaveGameInfo to contain new host information
-      console.log("Updating SaveGameInfo...");
-      console.log("Original SaveGameInfo length:", config.originalFiles.saveGameInfo.length);
-      
-      newSaveGameInfoXml = updateSaveGameInfo(fixedNewHostData, config.originalFiles.saveGameInfo);
-      
-      console.log("Updated SaveGameInfo length:", newSaveGameInfoXml.length);
-      console.log("SaveGameInfo changed:", newSaveGameInfoXml !== config.originalFiles.saveGameInfo);
-
-      // Swap unique IDs between host and farmhand
-      const { newHostData: swappedNewHostData, oldHostData: swappedOldHostData } = swapPlayerIDs(
-        fixedNewHostData,
-        hostData
-      );
-
-      // Update new save game XML with swapped IDs
-      newSaveGameXml = newSaveGameXml.replace(fixedNewHostData, swappedNewHostData);
-      newSaveGameXml = newSaveGameXml.replace(farmhandData, newFarmhandData);
+      // Update SaveGameInfo with the new host information
+      console.log("=== UPDATING SAVEGAMEINFO ===");
+      newSaveGameInfoXml = updateSaveGameInfo(newHostBlock, config.originalFiles.saveGameInfo);
 
       // Update global variables with new content
       config.updateOriginalFiles("saveGame", newSaveGameXml);
       config.updateOriginalFiles("saveGameInfo", newSaveGameInfoXml);
       
-      console.log("=== FINAL VERIFICATION ===");
-      console.log("SaveGame changed:", 
-        config.originalFiles.saveGame !== config.backupFiles.saveGame);
-      console.log("SaveGameInfo changed:", 
-        config.originalFiles.saveGameInfo !== config.backupFiles.saveGameInfo);
-      console.log("SaveGame length:", config.originalFiles.saveGame.length);
-      console.log("SaveGameInfo length:", config.originalFiles.saveGameInfo.length);
+      console.log("=== SWAP COMPLETED ===");
+      console.log("SaveGame changed:", newSaveGameXml !== config.originalFiles.saveGame);
+      console.log("SaveGameInfo changed:", newSaveGameInfoXml !== config.originalFiles.saveGameInfo);
 
       return true;
     } else {
@@ -267,6 +265,7 @@ export function swapHost() {
     }
   } catch (error) {
     showError("Error swapping host: " + error.message);
+    console.error("Host swap error:", error);
     return false;
   } finally {
     // Hide loading
@@ -277,35 +276,75 @@ export function swapHost() {
 }
 
 /**
- * Swap unique IDs between the old host and new host to ensure proper identification
+ * Extract inner content from XML tags
+ * @param {string} xmlBlock - The complete XML block with tags
+ * @param {string} tagName - The tag name (player, farmhand, farmer, Farmer)
+ * @returns {string} - The inner content without the wrapper tags
  */
-function swapPlayerIDs(newHostData, oldHostData) {
+function extractInnerContent(xmlBlock, tagName) {
+  if (!xmlBlock || typeof xmlBlock !== 'string') {
+    console.error("Invalid xmlBlock provided to extractInnerContent:", xmlBlock);
+    return '';
+  }
+  
+  let pattern;
+  
+  if (tagName === "player") {
+    pattern = /<player>([\s\S]*?)<\/player>/;
+  } else if (tagName === "farmhand") {
+    pattern = /<farmhand>([\s\S]*?)<\/farmhand>/;
+  } else if (tagName === "farmer" || tagName === "Farmer") {
+    pattern = /<Farmer[^>]*>([\s\S]*?)<\/Farmer>/;
+  } else {
+    console.error("Unknown tag name:", tagName);
+    return xmlBlock;
+  }
+  
+  const match = xmlBlock.match(pattern);
+  if (match && match[1] !== undefined) {
+    console.log(`Successfully extracted ${tagName} content, length:`, match[1].length);
+    return match[1];
+  } else {
+    console.error(`Could not extract inner content from ${tagName} tag. Block length:`, xmlBlock.length);
+    console.error("Pattern used:", pattern);
+    console.error("First 200 chars of xmlBlock:", xmlBlock.substring(0, 200));
+    return xmlBlock; // Return original block as fallback
+  }
+}
+
+/**
+ * Swap unique IDs between the old host and new host to ensure proper identification
+ * @param {string} newHostContent - Inner content that will become the new host
+ * @param {string} oldHostContent - Inner content that was the old host
+ * @returns {object} - Object with swapped content
+ */
+function swapPlayerIDs(newHostContent, oldHostContent) {
   console.log("Swapping player IDs between old and new host...");
   
   // Extract unique ID from old host
-  const oldHostIdMatch = oldHostData.match(/<UniqueMultiplayerID>(\d+)<\/UniqueMultiplayerID>/);
+  const oldHostIdMatch = oldHostContent.match(/<UniqueMultiplayerID>(\d+)<\/UniqueMultiplayerID>/);
   const oldHostId = oldHostIdMatch ? oldHostIdMatch[1] : null;
   
   // Extract unique ID from new host
-  const newHostIdMatch = newHostData.match(/<UniqueMultiplayerID>(\d+)<\/UniqueMultiplayerID>/);
+  const newHostIdMatch = newHostContent.match(/<UniqueMultiplayerID>(\d+)<\/UniqueMultiplayerID>/);
   const newHostId = newHostIdMatch ? newHostIdMatch[1] : null;
   
   console.log("Old host ID:", oldHostId);
   console.log("New host ID:", newHostId);
   
-  let swappedNewHostData = newHostData;
-  let swappedOldHostData = oldHostData;
+  let swappedNewHostContent = newHostContent;
+  let swappedOldHostContent = oldHostContent;
   
   // Swap the UniqueMultiplayerID fields if they exist
   if (oldHostId && newHostId) {
     // Give the new host the old host's ID (usually 0 for the host)
-    swappedNewHostData = newHostData.replace(
+    swappedNewHostContent = newHostContent.replace(
       `<UniqueMultiplayerID>${newHostId}</UniqueMultiplayerID>`,
       `<UniqueMultiplayerID>${oldHostId}</UniqueMultiplayerID>`
     );
     
     // Give the old host (now farmhand) the new host's old ID
-    swappedOldHostData = oldHostData.replace(
+    swappedOldHostContent = oldHostContent.replace(
       `<UniqueMultiplayerID>${oldHostId}</UniqueMultiplayerID>`,
       `<UniqueMultiplayerID>${newHostId}</UniqueMultiplayerID>`
     );
@@ -316,8 +355,8 @@ function swapPlayerIDs(newHostData, oldHostData) {
   }
   
   return {
-    newHostData: swappedNewHostData,
-    oldHostData: swappedOldHostData
+    newHostContent: swappedNewHostContent,
+    newFarmhandContent: swappedOldHostContent
   };
 }
 
