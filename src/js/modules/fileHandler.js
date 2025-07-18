@@ -15,6 +15,15 @@ export function handleFileUpload(event) {
   // Show loading spinner
   document.getElementById("loading").style.display = "block";
 
+  // Clear any previous error messages
+  const messageContainer = document.getElementById("message-container");
+  if (messageContainer) {
+    messageContainer.innerHTML = "";
+  }
+  
+  // Reset config data completely to ensure we don't have leftovers from legacy mode
+  config.resetData();
+
   // Hide the results section when a new file is loaded
   const resultSection = document.getElementById("result-section");
   if (resultSection) {
@@ -33,7 +42,9 @@ export function handleFileUpload(event) {
   // Get the file
   const file = event.target.files
     ? event.target.files[0]
-    : event.dataTransfer.files[0];
+    : (event.dataTransfer && event.dataTransfer.files)
+    ? event.dataTransfer.files[0]
+    : null;
 
   if (!file || !file.name.endsWith(".zip")) {
     showError(
@@ -161,6 +172,15 @@ export function handleTextInput(e) {
   if (!saveGameXml || !saveGameXml.includes("<player>")) {
     return;
   }
+  
+  // Clear any previous error messages
+  const messageContainer = document.getElementById("message-container");
+  if (messageContainer) {
+    messageContainer.innerHTML = "";
+  }
+  
+  // Reset config data completely to ensure we don't have leftovers from ZIP mode
+  config.resetData();
 
   // Hide the results section when new text is entered
   const resultSection = document.getElementById("result-section");
@@ -183,6 +203,17 @@ export function handleTextInput(e) {
     // Dynamically import to avoid circular dependencies
     import("./uiController.js").then((ui) => {
       ui.displayCharacters();
+      
+      // Clear the input field after processing to prevent browser freezing
+      // Only clear if this was called from the textarea input
+      if (e.target && e.target.tagName === "TEXTAREA") {
+        // Store the value temporarily in memory instead of keeping it in the DOM
+        const inputValue = e.target.value;
+        e.target.value = "";  // Clear the textarea
+        
+        // Show a success message
+        showMessage("Save file processed successfully! You can now select a new host.", "success");
+      }
     });
   }
 }
