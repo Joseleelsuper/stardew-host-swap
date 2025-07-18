@@ -5,7 +5,7 @@
 
 import * as config from "./config.js";
 import { showError, showMessage } from "./utils.js";
-import { fixHostData } from "./dataProcessor.js";
+import { fixHostData, setFarmhandHomeLocation, updateCabinOwnership } from "./dataProcessor.js";
 
 /**
  * Parse characters from the save file
@@ -210,10 +210,37 @@ export function swapHost() {
       // Create the new blocks by wrapping the swapped content with the original tags
       const newHostBlock = `<player>${finalNewHostContent}</player>`;
       let newFarmhandBlock;
+      
+      // Fix the farmhand's home location to point to the old host's cabin
+      let updatedFarmhandContent = newFarmhandContent;
+      
+      // Extract the old host's home location to determine cabin ID
+      const oldHostHomeMatch = hostInnerContent.match(/<homeLocation>(.*?)<\/homeLocation>/);
+      const oldHostHome = oldHostHomeMatch ? oldHostHomeMatch[1] : null;
+      
+      if (oldHostHome && oldHostHome !== "FarmHouse") {
+        // Old host had a cabin, new farmhand should use FarmHouse as fallback
+        // or we could assign them to a different cabin
+        console.log("Old host had cabin:", oldHostHome);
+        updatedFarmhandContent = setFarmhandHomeLocation(updatedFarmhandContent, "FarmHouse");
+      } else {
+        // Try to find an available cabin ID from the farmhand's original location
+        const farmhandHomeMatch = farmhandInnerContent.match(/<homeLocation>(.*?)<\/homeLocation>/);
+        const farmhandHome = farmhandHomeMatch ? farmhandHomeMatch[1] : null;
+        
+        if (farmhandHome && farmhandHome !== "FarmHouse") {
+          console.log("Setting old host to farmhand's cabin:", farmhandHome);
+          updatedFarmhandContent = setFarmhandHomeLocation(updatedFarmhandContent, farmhandHome);
+        } else {
+          console.log("No specific cabin found, using FarmHouse as fallback");
+          updatedFarmhandContent = setFarmhandHomeLocation(updatedFarmhandContent, "FarmHouse");
+        }
+      }
+      
       if (selectedFarmhand.type === "farmhand") {
-        newFarmhandBlock = `<farmhand>${newFarmhandContent}</farmhand>`;
+        newFarmhandBlock = `<farmhand>${updatedFarmhandContent}</farmhand>`;
       } else if (selectedFarmhand.type === "farmer") {
-        newFarmhandBlock = `<Farmer>${newFarmhandContent}</Farmer>`;
+        newFarmhandBlock = `<Farmer>${updatedFarmhandContent}</Farmer>`;
       }
 
       // Validate new blocks
@@ -245,6 +272,19 @@ export function swapHost() {
       
       console.log("Final save game XML length:", newSaveGameXml.length);
       console.log("Original save game XML length:", config.originalFiles.saveGame.length);
+
+      // Update cabin ownership references in buildings
+      console.log("=== UPDATING CABIN OWNERSHIP ===");
+      const oldHostIdMatch = hostInnerContent.match(/<UniqueMultiplayerID>(\d+)<\/UniqueMultiplayerID>/);
+      const newHostIdMatch = farmhandInnerContent.match(/<UniqueMultiplayerID>(\d+)<\/UniqueMultiplayerID>/);
+      
+      if (oldHostIdMatch && newHostIdMatch) {
+        const oldHostId = oldHostIdMatch[1];
+        const newHostOriginalId = newHostIdMatch[1];
+        
+        console.log("Updating cabin ownership from", newHostOriginalId, "to", oldHostId);
+        newSaveGameXml = updateCabinOwnership(newSaveGameXml, oldHostId, newHostOriginalId);
+      }
 
       // Update SaveGameInfo with the new host information
       console.log("=== UPDATING SAVEGAMEINFO ===");

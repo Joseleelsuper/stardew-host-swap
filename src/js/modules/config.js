@@ -34,6 +34,11 @@ export const TRANSFERRABLE_MAIL = [
   "<string>jojaVault</string>",
   "<string>JojaMember</string>",
   "<string>spring_2_1</string>", // Willy's shop unlock
+  "<string>landslideDone</string>", // Mine access after landslide
+  "<string>willyBackRoomUnlocked</string>", // Willy's back room access
+  "<string>doorUnlockDesert</string>", // Desert bus unlock
+  "<string>ccIsComplete</string>", // Community center completion
+  "<string>jojaComplete</string>", // Joja completion
 ];
 
 export const TRANSFERRABLE_EVENTS = [
@@ -43,6 +48,11 @@ export const TRANSFERRABLE_EVENTS = [
   "<int>611439</int>", // Community center unlocked
   "<int>191393</int>", // Community center final cutscene
   "<int>502261</int>", // Joja final cutscene
+  "<int>112</int>", // Introduced to mines
+  "<int>60367</int>", // Wizard introduction event
+  "<int>558291</int>", // Desert unlock event
+  "<int>2146991</int>", // Sewer access event
+  "<int>5755321</int>", // Grandpa evaluation event
 ];
 
 // Reset data
